@@ -1,0 +1,108 @@
+services:
+  # 1. Backend API & WebSocket (Laravel 11 / Reverb Production Container)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pentas_lirik_backend
+    environment:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+    volumes:
+      - './backend:/var/www/html'
+    networks:
+      - sail
+    depends_on:
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  # 2. Database MySQL
+  mysql:
+    image: 'mysql:8.4'
+    container_name: pentas_lirik_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: '${DB_DATABASE:-pentas_lirik}'
+      MYSQL_USER: '${DB_USERNAME:-sail}'
+      MYSQL_PASSWORD: '${DB_PASSWORD:-password}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    volumes:
+      - 'sail-mysql:/var/lib/mysql'
+    networks:
+      - sail
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - '-p${DB_PASSWORD:-password}'
+      retries: 3
+      timeout: 5s
+    restart: unless-stopped
+
+  # 3. Redis Cache & Live State
+  redis:
+    image: 'redis:alpine'
+    container_name: pentas_lirik_redis
+    volumes:
+      - 'sail-redis:/data'
+    networks:
+      - sail
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      retries: 3
+      timeout: 5s
+    restart: unless-stopped
+
+  # 4. Frontend React Production App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pentas_lirik_frontend
+    networks:
+      - sail
+    restart: unless-stopped
+
+  # 5. Nginx Reverse Proxy Gateway
+  nginx:
+    image: nginx:alpine
+    container_name: pentas_lirik_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - sail
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  # 6. Cloudflare Tunnel Connector
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: pentas_lirik_cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - sail
+    depends_on:
+      - nginx
+
+networks:
+  sail:
+    driver: bridge
+
+volumes:
+  sail-mysql:
+    driver: local
+  sail-redis:
+    driver: local

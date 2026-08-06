@@ -183,16 +183,16 @@ cd /apps/repos/pentas-lirik
 docker compose up -d --build
 
 # Generate App Key Laravel di dalam kontainer backend
-docker compose exec laravel.test php artisan key:generate
+docker compose exec backend php artisan key:generate
 
 # Jalankan Database Migration & Seeding di dalam kontainer backend
-docker compose exec laravel.test php artisan migrate --force --seed
+docker compose exec backend php artisan migrate --force --seed
 
 # Optimasi Cache Laravel Production
-docker compose exec laravel.test php artisan config:cache
-docker compose exec laravel.test php artisan route:cache
-docker compose exec laravel.test php artisan view:cache
-docker compose exec laravel.test php artisan event:cache
+docker compose exec backend php artisan config:cache
+docker compose exec backend php artisan route:cache
+docker compose exec backend php artisan view:cache
+docker compose exec backend php artisan event:cache
 ```
 
 ---
@@ -230,27 +230,27 @@ cd /apps/repos/pentas-lirik
 git pull origin main
 
 # 3. Update Composer Dependencies di dalam kontainer backend
-docker compose exec laravel.test composer install --no-dev --optimize-autoloader
+docker compose exec backend composer install --no-dev --optimize-autoloader
 
 # 4. Jalankan Skema Migration Database terbaru
-docker compose exec laravel.test php artisan migrate --force
+docker compose exec backend php artisan migrate --force
 
 # 5. Reset & Re-cache Konfigurasi Laravel
-docker compose exec laravel.test php artisan config:clear
-docker compose exec laravel.test php artisan route:clear
-docker compose exec laravel.test php artisan view:clear
-docker compose exec laravel.test php artisan cache:clear
+docker compose exec backend php artisan config:clear
+docker compose exec backend php artisan route:clear
+docker compose exec backend php artisan view:clear
+docker compose exec backend php artisan cache:clear
 
-docker compose exec laravel.test php artisan config:cache
-docker compose exec laravel.test php artisan route:cache
-docker compose exec laravel.test php artisan view:cache
-docker compose exec laravel.test php artisan event:cache
+docker compose exec backend php artisan config:cache
+docker compose exec backend php artisan route:cache
+docker compose exec backend php artisan view:cache
+docker compose exec backend php artisan event:cache
 
 # 6. Rebuild kontainer frontend & backend yang mengalami perubahan
-docker compose up -d --build frontend laravel.test
+docker compose up -d --build frontend backend
 
 # 7. Restart Service Queue Worker & Reverb WebSocket Server
-docker compose exec laravel.test php artisan queue:restart
+docker compose exec backend php artisan queue:restart
 docker compose restart reverb
 ```
 
@@ -314,7 +314,7 @@ networks:
 Lalu daftarkan service backend ke network tersebut:
 ```yaml
 services:
-  laravel.test:
+  backend:
     networks:
       - sail
       - shared_network
@@ -390,7 +390,7 @@ Tambahkan service berikut ke dalam file `docker-compose.yml` di `/apps/repos/pen
 
 ```yaml
 services:
-  # ... (service frontend, laravel.test, reverb, mysql, redis, nginx) ...
+  # ... (service frontend, backend, reverb, mysql, redis, nginx) ...
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -490,7 +490,7 @@ docker compose logs -f cloudflared
 docker compose logs -f reverb
 
 # Cek log error backend Laravel
-docker compose exec laravel.test tail -f storage/logs/laravel.log
+docker compose exec backend tail -f storage/logs/laravel.log
 ```
 
 ### 6.2. Prosedur Rollback Darurat
@@ -506,8 +506,8 @@ git reset --hard HEAD~1
 docker compose up -d --build
 
 # 3. Clear cache & restart worker
-docker compose exec laravel.test php artisan config:cache
-docker compose exec laravel.test php artisan queue:restart
+docker compose exec backend php artisan config:cache
+docker compose exec backend php artisan queue:restart
 ```
 
 ---

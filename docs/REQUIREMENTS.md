@@ -105,9 +105,9 @@ The system MUST ensure the OBS Display Layer can recover its last known state up
 
 *   **Backend Framework:** Laravel (PHP) MUST be used for all backend API services and state management.
 *   **Real-time Communication:** Laravel Reverb MUST be used for all WebSocket-based real-time broadcasting.
-*   **Operator Frontend:** Nuxt.js (Vue.js) with Tailwind CSS MUST be used for the Operator Dashboard frontend.
+*   **Operator Frontend:** React 19 + TypeScript + Vite 6 with Tailwind CSS MUST be used for the Operator Dashboard frontend.
 *   **Display Layer:** The OBS Display Layer MUST be implemented using static HTML and Vanilla JavaScript to minimize overhead within OBS Browser Source.
-*   **Database:** PostgreSQL MUST be used as the primary relational database.
+*   **Database:** MySQL (via Sail) MUST be used as the primary relational database.
 *   **Cache/State Store:** Redis MUST be used for ephemeral state management (e.g., live display content) and caching.
 *   **Deployment Environment:** The application MUST be deployed on an Ubuntu Server within a Local Area Network (LAN).
 *   **Containerization:** Docker and Docker Compose MUST be used for packaging and orchestrating all application services.

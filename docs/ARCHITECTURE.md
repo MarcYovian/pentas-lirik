@@ -141,12 +141,12 @@ sequenceDiagram
 
 PentasLirik is designed for deployment on a single Ubuntu Server within a Local Area Network (LAN) using Docker and Nginx.
 
-1.  **Containerization:** Each core component (Laravel Backend, Laravel Reverb, Nuxt.js build, PostgreSQL, Redis, Nginx) will run in its own Docker container. A `docker-compose.yml` file will define the services, networks, and volumes for the entire application stack.
+1.  **Containerization:** Each core component (Laravel Backend, Laravel Reverb, React Frontend build, MySQL, Redis, Nginx) will run in its own Docker container. A `docker-compose.yml` file will define the services, networks, and volumes for the entire application stack.
 2.  **Nginx as Reverse Proxy:** Nginx will be configured to listen on standard HTTP/S ports (e.g., 80/443). It will act as a reverse proxy, routing:
     *   API requests (`/api/*`) to the Laravel Backend container.
     *   WebSocket connections (`/ws`) to the Laravel Reverb container.
-    *   Static assets for the Operator Dashboard (Nuxt.js build) and the OBS Browser Source (HTML/JS) directly.
-3.  **Data Persistence:** PostgreSQL and Redis containers will use Docker volumes to persist their data on the host machine, ensuring data is not lost if containers are stopped or removed.
+    *   Static assets for the Operator Dashboard (React build) and the OBS Browser Source (HTML/JS) directly.
+3.  **Data Persistence:** MySQL and Redis containers will use Docker volumes to persist their data on the host machine, ensuring data is not lost if containers are stopped or removed.
 4.  **Network Configuration:** Docker Compose will create an internal Docker network for the containers to communicate with each other. Nginx will expose the necessary ports to the host machine's LAN interface.
 5.  **Access:**
     *   The Operator Dashboard will be accessible via a web browser on any device connected to the LAN, pointing to the server's IP address or hostname.

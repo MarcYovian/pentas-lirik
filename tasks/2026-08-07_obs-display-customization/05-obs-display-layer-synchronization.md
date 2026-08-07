@@ -4,8 +4,8 @@
 Refaktor komponen overlay `OBSDisplay.tsx` agar menerapkan dynamic inline CSS styling dari persentase font size, warna, shadow, dan background box yang disinkronisasikan via WebSocket (`display:settings-updated`), `localStorage`, dan HTTP polling fallback tanpa menyebabkan kedipan (flicker) pada pergantian lirik.
 
 ## 📄 Blueprint References
-- [ARCHITECTURE.md](file:///home/rodex/Documents/cell/projects/pentas-lirik/docs/feature/obs-display-customization/ARCHITECTURE.md) - Section: OBS Browser Source Overlay & Decoupled Payload Strategy
-- [PRD.md](file:///home/rodex/Documents/cell/projects/pentas-lirik/docs/feature/obs-display-customization/PRD.md) - Section: FR-06 & Non-Functional Performance
+- [ARCHITECTURE.md](../../docs/feature/obs-display-customization/ARCHITECTURE.md) - Section: OBS Browser Source Overlay & Decoupled Payload Strategy
+- [PRD.md](../../docs/feature/obs-display-customization/PRD.md) - Section: FR-06 & Non-Functional Performance
 
 ## 📁 Target Files
 - `frontend/src/components/OBSDisplay.tsx`

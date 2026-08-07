@@ -4,8 +4,9 @@
 Mengembangkan REST API (`GET` & `PUT /api/v1/display/settings`), validasi masukan warna dan ukuran, caching Redis untuk performa instant load, serta event broadcasting Laravel Reverb (`display:settings-updated`).
 
 ## 📄 Blueprint References
-- [API.md](file:///home/rodex/Documents/cell/projects/pentas-lirik/docs/feature/obs-display-customization/API.md) - Section: Display Settings Management & WebSocket Protocol
-- [ARCHITECTURE.md](file:///home/rodex/Documents/cell/projects/pentas-lirik/docs/feature/obs-display-customization/ARCHITECTURE.md) - Section: Backend API & WebSocket Engine
+- [API.md](../../docs/feature/obs-display-customization/API.md) - Section: API Endpoints & Broadcasting Payload Format
+- [ARCHITECTURE.md](../../docs/feature/obs-display-customization/ARCHITECTURE.md) - Section: Real-Time Event Driven Synchronization
+- [REQUIREMENTS.md](../../docs/feature/obs-display-customization/REQUIREMENTS.md) - Section: Validation Rules & Performance
 
 ## 📁 Target Files
 - `backend/app/Http/Controllers/Api/V1/DisplaySettingController.php`

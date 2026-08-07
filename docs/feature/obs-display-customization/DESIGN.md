@@ -58,16 +58,22 @@ The control panel enables customization across primary text, text shadows, outli
 
 ## 5. UI Components & Settings Panel Layout
 
-The Display Customization UI (`/settings/display`) follows an intuitive 2-column or stacked layout:
+The Display Customization UI (`DisplaySettingsPanel.tsx`) follows a 3-tier dark mode layout:
 
-*   **Left Column (Control Panel):**
-    *   **Preset Selector:** Dropdown and "Save New Preset" button.
-    *   **Typography Controls Section:** Size slider, weight selector, text casing buttons.
-    *   **Color & Shadow Section:** Text color picker, text shadow blur slider, stroke width.
-    *   **Background Container Section:** Toggle switch (`Show Background Box`), color picker, opacity slider (0-100%), padding sliders, border-radius slider.
-*   **Right Column / Top (Mini OBS Live Preview Canvas):**
-    *   Simulated 16:9 video frame background (toggleable dark/light video test patterns).
-    *   Real-time rendered lirik container mirroring `OBSDisplay.tsx` styling.
+*   **Header & Sandbox Status Bar:**
+    *   **Status Indicator:** Shows `🟢 Live Broadcast Theme: [Name]` alongside `👁️ Sandbox Previewing: [Name]`.
+    *   **Action Bar Buttons:** `"Apply to OBS Live"` (1-click broadcast activation), `"Save Changes to Preset"`, `"Save as New Preset..."`, `"Reset Default"`, and Close modal button.
+*   **Preset Profile Selector & Sandbox Cards (`PresetSelector.tsx`):**
+    *   **Badge `🟢 LIVE ON AIR`:** Marks the preset currently active on the live OBS Studio broadcast.
+    *   **Badge `👁️ PREVIEWING`:** Marks the preset currently being inspected/edited in the Sandbox Preview Mode without affecting the live broadcast.
+    *   **Actions:** `"Inspect Preview"`, `"Apply to OBS Live"`, `"Save Changes to Preset"`, and Trash icon (disabled for live theme).
+*   **Mini OBS Live Preview Canvas (`MiniOBSPreview.tsx`):**
+    *   Simulated 16:9 video frame canvas with toggleable backgrounds (`Dark Feed`, `Bright Feed`, `Transp. Grid`).
+    *   Real-time rendered sample lyric text with `0.45x` proportional font scaling and dynamic CSS inline properties.
+*   **Form Controls Grid (3 Columns):**
+    *   **Column 1 (Typography & Scaling):** Dual-slider font size (`16px`-`120px`), font weight select, text casing toggle group (`UPPERCASE`, `Capitalize`, `As-Is`), alignment buttons (`Left`, `Center`, `Right`).
+    *   **Column 2 (Colors & Text Effects):** Text color picker + quick swatches, shadow color & blur slider (`0px`-`30px`), text stroke width slider (`0px`-`4px`) & stroke color picker.
+    *   **Column 3 (Background Box Container):** `Enable Background Box` toggle switch, background color picker & opacity slider (`0%`-`100%`), vertical padding (`0px`-`50px`), horizontal padding (`0px`-`100px`), border-radius (`0px`-`50px`), container max width select (`7XL`, `5XL`, `3XL`, `Full Width`).
 
 ## 6. Interaction & Motion
 

@@ -4,9 +4,9 @@
 Mengembangkan antarmuka pengguna berupa Panel Pengaturan Tampilan (`DisplaySettingsPanel.tsx`) di Dashboard Admin/Operator dengan pemilih profil preset (dengan mode Sandbox Preview), tombol update/simpan/aktifkan preset, serta Mini OBS Live Preview Canvas (`MiniOBSPreview.tsx`) untuk memberikan feedback visual langsung saat mengatur gaya tampilan OBS.
 
 ## 📄 Blueprint References
-- [DESIGN.md](file:///home/rodex/Documents/cell/projects/pentas-lirik/docs/feature/obs-display-customization/DESIGN.md) - Section: UI Components & Settings Panel Layout
-- [REQUIREMENTS.md](file:///home/rodex/Documents/cell/projects/pentas-lirik/docs/feature/obs-display-customization/REQUIREMENTS.md) - Section: FR-01 s/d FR-04
-- [API.md](file:///home/rodex/Documents/cell/projects/pentas-lirik/docs/feature/obs-display-customization/API.md) - Section: Preset Profiles Management
+- [DESIGN.md](../../docs/feature/obs-display-customization/DESIGN.md) - Section: UI Components & Settings Panel Layout
+- [REQUIREMENTS.md](../../docs/feature/obs-display-customization/REQUIREMENTS.md) - Section: FR-01 s/d FR-04
+- [API.md](../../docs/feature/obs-display-customization/API.md) - Section: Preset Profiles Management
 
 ## 📁 Target Files
 - `frontend/src/components/settings/DisplaySettingsPanel.tsx`

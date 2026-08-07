@@ -186,7 +186,7 @@ VITE_REVERB_PORT="${REVERB_PORT}"
 VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 
 # Cloudflare Tunnel Token
-CLOUDFLARE_TUNNEL_TOKEN=eyJhYmNkZWZna... # Masukkan token dari Cloudflare Zero Trust
+TUNNEL_TOKEN=eyJhYmNkZWZna... # Masukkan token dari Cloudflare Zero Trust
 ```
 
 ---

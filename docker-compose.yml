@@ -98,8 +98,6 @@ services:
     command: tunnel --no-autoupdate run
     env_file:
       - ./backend/.env
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
       - sail
     depends_on:

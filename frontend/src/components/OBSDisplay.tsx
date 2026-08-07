@@ -44,17 +44,25 @@ export const OBSDisplay: React.FC = () => {
     const connectWS = () => {
       ws = new WebSocket(wsUrl);
 
+      ws.onopen = () => {
+        try {
+          ws?.send(JSON.stringify({ event: 'pusher:subscribe', data: { channel: 'display' } }));
+        } catch (e) {}
+      };
+
       ws.onmessage = (event) => {
         try {
           const messageData = JSON.parse(event.data);
+          const evt = messageData.event || messageData.type;
 
           // Handle Laravel Reverb broadcast format
-          if (messageData.event === 'display:update' || messageData.type === 'display:update') {
-            const payload = typeof messageData.data === 'string' 
-              ? JSON.parse(messageData.data) 
-              : (messageData.payload || messageData.data);
-            setLiveState(payload);
-          } else if (messageData.event === 'display:clear' || messageData.type === 'display:clear') {
+          if (evt === 'display:update' || evt === 'App\\Events\\DisplayUpdateEvent') {
+            const rawData = messageData.data || messageData.payload;
+            const payload = typeof rawData === 'string' 
+              ? JSON.parse(rawData) 
+              : rawData;
+            if (payload) setLiveState(payload);
+          } else if (evt === 'display:clear' || evt === 'App\\Events\\DisplayClearEvent') {
             setLiveState({
               type: 'clear',
               content: null,

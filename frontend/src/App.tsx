@@ -110,17 +110,28 @@ export default function App() {
 
       ws.onopen = () => {
         setIsConnected(true);
+        try {
+          ws?.send(JSON.stringify({ event: 'pusher:subscribe', data: { channel: 'display' } }));
+        } catch (e) {}
       };
 
       ws.onmessage = (event) => {
         try {
-          const message: WsMessage = JSON.parse(event.data);
-          if (
-            message.type === 'INIT_STATE' ||
-            message.type === 'display:update' ||
-            message.type === 'display:clear'
-          ) {
-            setLiveState(message.payload);
+          const messageData = JSON.parse(event.data);
+          const evt = messageData.event || messageData.type;
+          if (evt === 'display:update' || evt === 'App\\Events\\DisplayUpdateEvent') {
+            const rawData = messageData.data || messageData.payload;
+            const payload = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+            if (payload) setLiveState(payload);
+          } else if (evt === 'display:clear' || evt === 'App\\Events\\DisplayClearEvent') {
+            setLiveState({
+              type: 'clear',
+              content: null,
+              song_id: null,
+              lyric_chunk_id: null,
+            });
+          } else if (messageData.type === 'INIT_STATE' && messageData.payload) {
+            setLiveState(messageData.payload);
           }
         } catch (err) {
           console.error('Error parsing dashboard WS message:', err);
@@ -343,7 +354,7 @@ export default function App() {
   // Live Control Actions
   const handleSendLyricChunk = async (chunk: LyricChunk, songTitle: string, songId: number) => {
     try {
-      await fetch('/api/v1/live/send-lyric', {
+      const res = await fetch('/api/v1/live/send-lyric', {
         method: 'POST',
         headers: getAuthHeaders(true),
         body: JSON.stringify({
@@ -357,6 +368,10 @@ export default function App() {
           label: chunk.label,
         }),
       });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setLiveState(json.data);
+      }
     } catch (err) {
       console.error('Error sending lyric chunk live:', err);
     }
@@ -364,7 +379,7 @@ export default function App() {
 
   const handleSendAnnouncement = async (content: string) => {
     try {
-      await fetch('/api/v1/live/send-lyric', {
+      const res = await fetch('/api/v1/live/send-lyric', {
         method: 'POST',
         headers: getAuthHeaders(true),
         body: JSON.stringify({
@@ -376,6 +391,10 @@ export default function App() {
           label: '[ANNOUNCEMENT]',
         }),
       });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setLiveState(json.data);
+      }
     } catch (err) {
       console.error('Error sending announcement live:', err);
     }
@@ -386,6 +405,12 @@ export default function App() {
       await fetch('/api/v1/live/clear', {
         method: 'POST',
         headers: getAuthHeaders(false),
+      });
+      setLiveState({
+        type: 'clear',
+        content: null,
+        song_id: null,
+        lyric_chunk_id: null,
       });
     } catch (err) {
       console.error('Error clearing screen:', err);

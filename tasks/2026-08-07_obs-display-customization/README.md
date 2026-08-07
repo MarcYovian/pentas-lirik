@@ -2,7 +2,7 @@
 
 > **Feature Branch:** `feature/obs-display-customization`  
 > **Status:** ✅ COMPLETED (100%)  
-> **Feature Blueprint Documentation:** [PRD.md](../../docs/feature/obs-display-customization/PRD.md) | [ARCHITECTURE.md](../../docs/feature/obs-display-customization/ARCHITECTURE.md) | [API.md](../../docs/feature/obs-display-customization/API.md) | [DESIGN.md](../../docs/feature/obs-display-customization/DESIGN.md)
+> **Feature Blueprint Documentation:** [PRD.md](../../docs/feature/2026-08-07_obs-display-customization/PRD.md) | [ARCHITECTURE.md](../../docs/feature/2026-08-07_obs-display-customization/ARCHITECTURE.md) | [API.md](../../docs/feature/2026-08-07_obs-display-customization/API.md) | [DESIGN.md](../../docs/feature/2026-08-07_obs-display-customization/DESIGN.md)
 
 ---
 

@@ -4,9 +4,9 @@
 Membuat pengujian integrasi backend (PHPUnit 18 test cases) dan pengujian otomatis End-to-End Playwright (16 E2E test cases) untuk memverifikasi alur kustomisasi tampilan OBS dari Control Panel hingga perubahan visual dinamis di OBS Overlay, termasuk Sandbox Preview Mode, Preset Profile Management, pengujian kasus batas (edge cases), XSS sanitization, dan aturan validasi.
 
 ## 📄 Blueprint References
-- [PRD.md](../../docs/feature/obs-display-customization/PRD.md) - Section: Success Metrics & KPIs & Risk Analysis
-- [REQUIREMENTS.md](../../docs/feature/obs-display-customization/REQUIREMENTS.md) - Section: Non-Functional Requirements & Performance
-- [API.md](../../docs/feature/obs-display-customization/API.md) - Section: Authentication, Authorization & Status Codes
+- [PRD.md](../../docs/feature/2026-08-07_obs-display-customization/PRD.md) - Section: Success Metrics & KPIs & Risk Analysis
+- [REQUIREMENTS.md](../../docs/feature/2026-08-07_obs-display-customization/REQUIREMENTS.md) - Section: Non-Functional Requirements & Performance
+- [API.md](../../docs/feature/2026-08-07_obs-display-customization/API.md) - Section: Authentication, Authorization & Status Codes
 
 ## 📁 Target Files
 - `backend/tests/Feature/DisplaySettingApiTest.php`

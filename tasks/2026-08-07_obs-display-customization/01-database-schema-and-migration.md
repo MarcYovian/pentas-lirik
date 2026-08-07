@@ -4,8 +4,8 @@
 Membuat migrasi database MySQL (menggunakan Docker Compose service backend), model Eloquent `DisplaySetting`, dan seeder default style untuk menyimpan konfigurasi kustomisasi tampilan OBS Display dan preset profil tema secara persisten.
 
 ## 📄 Blueprint References
-- [DATABASE.md](../../docs/feature/obs-display-customization/DATABASE.md) - Section: ERD & Table Schemas
-- [REQUIREMENTS.md](../../docs/feature/obs-display-customization/REQUIREMENTS.md) - Section: Data Persistence Requirements
+- [DATABASE.md](../../docs/feature/2026-08-07_obs-display-customization/DATABASE.md) - Section: ERD & Table Schemas
+- [REQUIREMENTS.md](../../docs/feature/2026-08-07_obs-display-customization/REQUIREMENTS.md) - Section: Data Persistence Requirements
 
 ## 📁 Target Files
 - `backend/database/migrations/2026_08_07_000001_create_display_settings_table.php`

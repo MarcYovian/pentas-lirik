@@ -4,9 +4,10 @@
 Membuat antarmuka TypeScript (`DisplaySetting.ts`), modul API service (`displaySettingService.ts`), serta custom React hook (`useDisplaySettings.ts`) dengan kemampuan auto-save debounced (300ms), pendengar WebSocket event, dan manajemen profil preset (load, create, update, preview sandbox, activate, delete).
 
 ## 📄 Blueprint References
-- [ARCHITECTURE.md](../../docs/feature/obs-display-customization/ARCHITECTURE.md) - Section: Component Breakdown & State Management
-- [REQUIREMENTS.md](../../docs/feature/obs-display-customization/REQUIREMENTS.md) - Section: FR-01 s/d FR-04 & Non-Functional Performance
-- [API.md](../../docs/feature/obs-display-customization/API.md) - Section: Preset Profiles Management
+- [ARCHITECTURE.md](../../docs/feature/2026-08-07_obs-display-customization/ARCHITECTURE.md) - Section: Frontend State Management Strategy
+- [DESIGN.md](../../docs/feature/2026-08-07_obs-display-customization/DESIGN.md) - Section: Data Types & Interfaces
+- [REQUIREMENTS.md](../../docs/feature/2026-08-07_obs-display-customization/REQUIREMENTS.md) - Section: FR-01 s/d FR-04 & Non-Functional Performance
+- [API.md](../../docs/feature/2026-08-07_obs-display-customization/API.md) - Section: Preset Profiles Management
 
 ## 📁 Target Files
 - `frontend/src/types/DisplaySetting.ts`

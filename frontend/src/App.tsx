@@ -6,6 +6,7 @@ import { SetlistRundown } from './components/SetlistRundown';
 import { LiveControlPanel } from './components/LiveControlPanel';
 import { SongModal } from './components/SongModal';
 import { UserManagementModal } from './components/UserManagementModal';
+import { DisplaySettingsPanel } from './components/settings/DisplaySettingsPanel';
 import { OBSDisplay } from './components/OBSDisplay';
 import { LoginView } from './components/LoginView';
 
@@ -50,6 +51,7 @@ export default function App() {
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isUserMgmtModalOpen, setIsUserMgmtModalOpen] = useState(false);
+  const [isDisplaySettingsModalOpen, setIsDisplaySettingsModalOpen] = useState(false);
 
   // Helper to construct authenticated API headers
   const getAuthHeaders = (hasBody = true) => {
@@ -454,17 +456,18 @@ export default function App() {
 
   return (
     <div id="app-root-container" className="flex flex-col h-screen overflow-hidden bg-[#0F0F0F]">
-      {/* Navbar Header */}
+      {/* Top Header Navbar */}
       <Navbar
         user={user}
         onLogout={handleLogout}
         onOpenUserManagement={() => setIsUserMgmtModalOpen(true)}
+        onOpenDisplaySettings={() => setIsDisplaySettingsModalOpen(true)}
         isConnected={isConnected}
-        liveStateActive={liveState.type !== 'clear' && !!liveState.content}
+        liveStateActive={liveState.type === 'lyric' || liveState.type === 'announcement'}
       />
 
-      {/* Main 3-Column Operator Dashboard Grid */}
-      <main id="operator-dashboard-grid" className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden min-h-0">
+      {/* Main 3-Column Dashboard Layout */}
+      <main id="dashboard-main-layout" className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 p-4 min-h-0 overflow-hidden">
         {/* Column 1: Song Library (Left - 3 Cols) */}
         <div className="md:col-span-3 h-full min-h-0">
           <SongLibrary
@@ -534,6 +537,15 @@ export default function App() {
         currentUser={user}
         onClose={() => setIsUserMgmtModalOpen(false)}
       />
+
+      {/* Display Settings Customization Modal */}
+      {isDisplaySettingsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-6xl my-auto">
+            <DisplaySettingsPanel onClose={() => setIsDisplaySettingsModalOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -131,5 +131,8 @@ class DatabaseSeeder extends Seeder
             'song_id' => $song2->id,
             'order' => 2,
         ]);
+
+        // 5. Seed Default Display Settings
+        $this->call(DisplaySettingSeeder::class);
     }
 }

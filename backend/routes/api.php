@@ -14,13 +14,22 @@ Route::prefix('v1')->group(function () {
     // Auth Routes
     Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
 
-    // Public Live State Synchronization Route (for OBS Browser Source load)
+    // Public Live State & Display Customization Routes (for OBS Browser Source load)
     Route::get('/state/live', [\App\Http\Controllers\Api\V1\LiveControlController::class, 'getLiveState']);
     Route::get('/live/state', [\App\Http\Controllers\Api\V1\LiveControlController::class, 'getLiveState']);
+    Route::get('/display/settings', [\App\Http\Controllers\Api\V1\DisplaySettingController::class, 'show']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
+
+        // OBS Display Customization Management API
+        Route::put('/display/settings', [\App\Http\Controllers\Api\V1\DisplaySettingController::class, 'update']);
+        Route::get('/display/presets', [\App\Http\Controllers\Api\V1\DisplaySettingController::class, 'indexPresets']);
+        Route::post('/display/presets', [\App\Http\Controllers\Api\V1\DisplaySettingController::class, 'storePreset']);
+        Route::put('/display/presets/{id}', [\App\Http\Controllers\Api\V1\DisplaySettingController::class, 'updatePreset']);
+        Route::post('/display/presets/{id}/activate', [\App\Http\Controllers\Api\V1\DisplaySettingController::class, 'activatePreset']);
+        Route::delete('/display/presets/{id}', [\App\Http\Controllers\Api\V1\DisplaySettingController::class, 'destroyPreset']);
 
         // Live Control API (Operator actions)
         Route::post('/live/display', [\App\Http\Controllers\Api\V1\LiveControlController::class, 'display']);

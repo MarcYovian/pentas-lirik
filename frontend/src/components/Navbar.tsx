@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Radio, Copy, Check, Users, LogOut, ExternalLink, Monitor } from 'lucide-react';
+import { Radio, Copy, Check, Users, LogOut, ExternalLink, Monitor, Sliders } from 'lucide-react';
 import { User } from '../types';
 
 interface NavbarProps {
   user: User;
   onLogout: () => void;
   onOpenUserManagement: () => void;
+  onOpenDisplaySettings: () => void;
   isConnected: boolean;
   liveStateActive: boolean;
 }
@@ -14,6 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   user,
   onLogout,
   onOpenUserManagement,
+  onOpenDisplaySettings,
   isConnected,
   liveStateActive,
 }) => {
@@ -103,6 +105,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             {user.role}
           </span>
         </div>
+
+        <button
+          id="display-settings-btn"
+          onClick={onOpenDisplaySettings}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 text-xs rounded-lg transition"
+          title="Customize OBS Display Overlay Styling & Presets"
+        >
+          <Sliders className="w-3.5 h-3.5 text-blue-400" />
+          <span className="hidden sm:inline">Display Style</span>
+        </button>
 
         {user.role === 'admin' && (
           <button

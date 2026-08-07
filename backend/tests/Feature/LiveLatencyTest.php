@@ -6,6 +6,7 @@ use App\Events\DisplayUpdateEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class LiveLatencyTest extends TestCase
@@ -22,6 +23,7 @@ class LiveLatencyTest extends TestCase
         $this->token = $this->operator->createToken('latency_test_token')->plainTextToken;
     }
 
+    #[Test]
     public function test_live_display_api_response_latency_is_under_100ms(): void
     {
         Event::fake();
@@ -50,6 +52,7 @@ class LiveLatencyTest extends TestCase
         $this->assertLessThan(100, $durationMs, "Live display broadcast API latency should be < 100ms (Actual: {$durationMs}ms)");
     }
 
+    #[Test]
     public function test_public_live_state_fetch_latency_is_under_50ms(): void
     {
         $startTime = microtime(true);

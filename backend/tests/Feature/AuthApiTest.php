@@ -5,12 +5,14 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Test]
     public function test_user_can_login_with_correct_credentials(): void
     {
         $user = User::factory()->create([
@@ -41,6 +43,7 @@ class AuthApiTest extends TestCase
             ]);
     }
 
+    #[Test]
     public function test_user_cannot_login_with_invalid_password(): void
     {
         User::factory()->create([
@@ -59,6 +62,7 @@ class AuthApiTest extends TestCase
             ]);
     }
 
+    #[Test]
     public function test_authenticated_user_can_get_profile(): void
     {
         $user = User::factory()->create(['role' => 'OPERATOR']);
@@ -79,6 +83,7 @@ class AuthApiTest extends TestCase
             ]);
     }
 
+    #[Test]
     public function test_user_can_logout(): void
     {
         $user = User::factory()->create();
@@ -95,6 +100,7 @@ class AuthApiTest extends TestCase
         $this->assertCount(0, $user->tokens);
     }
 
+    #[Test]
     public function test_admin_can_access_admin_route(): void
     {
         $admin = User::factory()->create(['role' => 'ADMIN']);
@@ -107,6 +113,7 @@ class AuthApiTest extends TestCase
             ->assertJson(['message' => 'Welcome Admin']);
     }
 
+    #[Test]
     public function test_operator_cannot_access_admin_route(): void
     {
         $operator = User::factory()->create(['role' => 'OPERATOR']);
@@ -119,6 +126,7 @@ class AuthApiTest extends TestCase
             ->assertJson(['message' => 'Forbidden. You do not have access to this resource.']);
     }
 
+    #[Test]
     public function test_unauthenticated_user_cannot_access_protected_routes(): void
     {
         $response = $this->getJson('/api/v1/auth/me');

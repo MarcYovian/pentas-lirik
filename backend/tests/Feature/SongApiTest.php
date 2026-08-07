@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Song;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class SongApiTest extends TestCase
@@ -21,6 +22,7 @@ class SongApiTest extends TestCase
         $this->token = $this->operator->createToken('test_token')->plainTextToken;
     }
 
+    #[Test]
     public function test_can_list_songs(): void
     {
         Song::factory()->count(3)->create();
@@ -36,6 +38,7 @@ class SongApiTest extends TestCase
             ]);
     }
 
+    #[Test]
     public function test_can_search_songs_by_title_or_artist(): void
     {
         Song::create(['title' => 'Amazing Grace', 'artist' => 'John Newton']);
@@ -49,6 +52,7 @@ class SongApiTest extends TestCase
             ->assertJsonPath('data.0.title', 'Amazing Grace');
     }
 
+    #[Test]
     public function test_can_create_song_with_raw_lyrics(): void
     {
         $payload = [
@@ -70,6 +74,7 @@ class SongApiTest extends TestCase
         $this->assertDatabaseHas('lyric_chunks', ['label' => '[VERSE 1]']);
     }
 
+    #[Test]
     public function test_can_show_song_detail(): void
     {
         $song = Song::create(['title' => 'Test Song', 'artist' => 'Test Artist']);
@@ -87,6 +92,7 @@ class SongApiTest extends TestCase
             ->assertJsonCount(1, 'data.lyric_chunks');
     }
 
+    #[Test]
     public function test_can_update_song_and_lyrics(): void
     {
         $song = Song::create(['title' => 'Old Title', 'artist' => 'Old Artist']);
@@ -110,6 +116,7 @@ class SongApiTest extends TestCase
         $this->assertDatabaseMissing('lyric_chunks', ['label' => '[VERSE 1]']);
     }
 
+    #[Test]
     public function test_can_delete_song(): void
     {
         $song = Song::create(['title' => 'To Delete', 'artist' => 'Artist']);
@@ -125,6 +132,7 @@ class SongApiTest extends TestCase
         $this->assertDatabaseMissing('lyric_chunks', ['song_id' => $song->id]);
     }
 
+    #[Test]
     public function test_unauthenticated_user_cannot_access_songs(): void
     {
         $response = $this->getJson('/api/v1/songs');

@@ -6,6 +6,7 @@ use App\Models\Setlist;
 use App\Models\Song;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class SetlistApiTest extends TestCase
@@ -22,6 +23,7 @@ class SetlistApiTest extends TestCase
         $this->token = $this->user->createToken('test_token')->plainTextToken;
     }
 
+    #[Test]
     public function test_can_list_setlists(): void
     {
         Setlist::factory()->count(2)->create(['user_id' => $this->user->id]);
@@ -33,6 +35,7 @@ class SetlistApiTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    #[Test]
     public function test_can_create_setlist(): void
     {
         $payload = ['name' => 'Sunday Service 10 AM'];
@@ -47,6 +50,7 @@ class SetlistApiTest extends TestCase
         $this->assertDatabaseHas('setlists', ['name' => 'Sunday Service 10 AM']);
     }
 
+    #[Test]
     public function test_can_show_setlist_details(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id, 'name' => 'Youth Gathering']);
@@ -59,6 +63,7 @@ class SetlistApiTest extends TestCase
             ->assertJsonPath('data.name', 'Youth Gathering');
     }
 
+    #[Test]
     public function test_can_update_setlist_name(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id, 'name' => 'Old Name']);
@@ -72,6 +77,7 @@ class SetlistApiTest extends TestCase
         $this->assertDatabaseHas('setlists', ['name' => 'Updated Name']);
     }
 
+    #[Test]
     public function test_can_delete_setlist(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id]);
@@ -85,6 +91,7 @@ class SetlistApiTest extends TestCase
         $this->assertDatabaseMissing('setlists', ['id' => $setlist->id]);
     }
 
+    #[Test]
     public function test_can_add_song_to_setlist(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id]);
@@ -105,6 +112,7 @@ class SetlistApiTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function test_can_remove_item_from_setlist(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id]);
@@ -126,6 +134,7 @@ class SetlistApiTest extends TestCase
         $this->assertDatabaseHas('setlist_items', ['id' => $item2->id, 'order' => 1]);
     }
 
+    #[Test]
     public function test_can_reorder_setlist_items(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id]);

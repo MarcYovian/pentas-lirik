@@ -7,6 +7,7 @@ use App\Events\DisplayUpdateEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class LiveControlApiTest extends TestCase
@@ -23,6 +24,7 @@ class LiveControlApiTest extends TestCase
         $this->token = $this->operator->createToken('test_token')->plainTextToken;
     }
 
+    #[Test]
     public function test_can_send_lyric_display_event_and_store_in_cache(): void
     {
         Event::fake();
@@ -53,6 +55,7 @@ class LiveControlApiTest extends TestCase
             ->assertJsonPath('data.content', 'Amazing grace! How sweet the sound');
     }
 
+    #[Test]
     public function test_can_send_clear_display_event(): void
     {
         Event::fake();
@@ -72,6 +75,7 @@ class LiveControlApiTest extends TestCase
             ->assertJsonPath('data.type', 'clear');
     }
 
+    #[Test]
     public function test_unauthenticated_user_cannot_trigger_live_display(): void
     {
         $response = $this->postJson('/api/v1/live/display', ['text' => 'Unauthorized']);

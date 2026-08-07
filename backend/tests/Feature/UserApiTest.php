@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class UserApiTest extends TestCase
@@ -25,6 +26,7 @@ class UserApiTest extends TestCase
         $this->operatorToken = $this->operator->createToken('op_token')->plainTextToken;
     }
 
+    #[Test]
     public function test_admin_can_list_users(): void
     {
         $response = $this->withHeader('Authorization', 'Bearer '.$this->adminToken)
@@ -34,6 +36,7 @@ class UserApiTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    #[Test]
     public function test_admin_can_create_new_user(): void
     {
         $payload = [
@@ -53,6 +56,7 @@ class UserApiTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'newop@pentaslirik.local']);
     }
 
+    #[Test]
     public function test_admin_can_update_user_role(): void
     {
         $targetUser = User::factory()->create(['role' => 'OPERATOR']);
@@ -66,6 +70,7 @@ class UserApiTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $targetUser->id, 'role' => 'ADMIN']);
     }
 
+    #[Test]
     public function test_admin_can_delete_user(): void
     {
         $targetUser = User::factory()->create(['role' => 'OPERATOR']);
@@ -79,6 +84,7 @@ class UserApiTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $targetUser->id]);
     }
 
+    #[Test]
     public function test_admin_cannot_delete_self(): void
     {
         $response = $this->withHeader('Authorization', 'Bearer '.$this->adminToken)
@@ -88,6 +94,7 @@ class UserApiTest extends TestCase
             ->assertJson(['message' => 'You cannot delete your own account.']);
     }
 
+    #[Test]
     public function test_operator_cannot_access_user_management(): void
     {
         $response = $this->withHeader('Authorization', 'Bearer '.$this->operatorToken)

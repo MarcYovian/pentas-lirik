@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // Auth Routes
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
 
     // Public Live State Synchronization Route (for OBS Browser Source load)
     Route::get('/state/live', [\App\Http\Controllers\Api\V1\LiveControlController::class, 'getLiveState']);

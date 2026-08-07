@@ -54,8 +54,9 @@ class SongController extends Controller
     {
         $song = Song::create($request->only(['title', 'artist']));
 
-        if ($request->has('lyrics') && $request->input('lyrics') !== null) {
-            $this->lyricParser->parseAndSync($song, $request->input('lyrics'));
+        $rawLyrics = $request->input('lyrics') ?? $request->input('lyrics_raw');
+        if ($rawLyrics !== null) {
+            $this->lyricParser->parseAndSync($song, (string) $rawLyrics);
         }
 
         $song->load('lyricChunks');
@@ -72,8 +73,9 @@ class SongController extends Controller
     {
         $song->update($request->only(['title', 'artist']));
 
-        if ($request->has('lyrics')) {
-            $this->lyricParser->parseAndSync($song, (string) $request->input('lyrics'));
+        $rawLyrics = $request->input('lyrics') ?? $request->input('lyrics_raw');
+        if ($rawLyrics !== null) {
+            $this->lyricParser->parseAndSync($song, (string) $rawLyrics);
         }
 
         $song->load('lyricChunks');

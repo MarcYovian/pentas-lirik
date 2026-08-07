@@ -175,11 +175,15 @@ export default function App() {
   // Song Library Handlers
   const handleSaveSong = async (songData: { title: string; artist: string; lyrics_raw: string }) => {
     try {
+      const payload = {
+        ...songData,
+        lyrics: songData.lyrics_raw,
+      };
       if (editingSong) {
         const res = await fetch(`/api/v1/songs/${editingSong.id}`, {
           method: 'PUT',
           headers: getAuthHeaders(true),
-          body: JSON.stringify(songData),
+          body: JSON.stringify(payload),
         });
         const json = await res.json();
         if (res.ok && json.data) {
@@ -192,7 +196,7 @@ export default function App() {
         const res = await fetch('/api/v1/songs', {
           method: 'POST',
           headers: getAuthHeaders(true),
-          body: JSON.stringify(songData),
+          body: JSON.stringify(payload),
         });
         const json = await res.json();
         if (res.ok && json.data) {

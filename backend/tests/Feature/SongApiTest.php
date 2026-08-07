@@ -75,6 +75,28 @@ class SongApiTest extends TestCase
     }
 
     #[Test]
+    public function test_can_create_song_with_lyrics_raw_param(): void
+    {
+        $payload = [
+            'title' => 'Kami Unjukkan',
+            'artist' => 'Lagu Gereja',
+            'lyrics_raw' => "[BAIT 1]\nKami unjukkan kami sembahkan\nkebebasan dan kemerdekaan.\n\n[BAIT 2]\nIngatan, budi, kehendak hati\nkami serahkan pada-Mu, Tuhan.",
+        ];
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson('/api/v1/songs', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.title', 'Kami Unjukkan')
+            ->assertJsonCount(2, 'data.lyric_chunks')
+            ->assertJsonPath('data.lyric_chunks.0.label', '[BAIT 1]')
+            ->assertJsonPath('data.lyric_chunks.1.label', '[BAIT 2]');
+
+        $this->assertDatabaseHas('songs', ['title' => 'Kami Unjukkan']);
+        $this->assertDatabaseHas('lyric_chunks', ['label' => '[BAIT 1]']);
+    }
+
+    #[Test]
     public function test_can_show_song_detail(): void
     {
         $song = Song::create(['title' => 'Test Song', 'artist' => 'Test Artist']);

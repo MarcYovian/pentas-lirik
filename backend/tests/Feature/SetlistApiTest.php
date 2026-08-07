@@ -51,6 +51,34 @@ class SetlistApiTest extends TestCase
     }
 
     #[Test]
+    public function test_can_create_setlist_with_embedded_items(): void
+    {
+        $song1 = Song::factory()->create(['title' => 'Amazing Grace']);
+        $song2 = Song::factory()->create(['title' => 'Cornerstone']);
+
+        $payload = [
+            'name' => 'Ibadah Minggu Pagi',
+            'items' => [
+                ['song_id' => $song1->id, 'type' => 'song'],
+                ['song_id' => $song2->id, 'type' => 'song'],
+            ],
+        ];
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson('/api/v1/setlists', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.name', 'Ibadah Minggu Pagi')
+            ->assertJsonCount(2, 'data.items')
+            ->assertJsonPath('data.items.0.song_id', $song1->id)
+            ->assertJsonPath('data.items.1.song_id', $song2->id);
+
+        $this->assertDatabaseHas('setlists', ['name' => 'Ibadah Minggu Pagi']);
+        $this->assertDatabaseHas('setlist_items', ['song_id' => $song1->id, 'order' => 1]);
+        $this->assertDatabaseHas('setlist_items', ['song_id' => $song2->id, 'order' => 2]);
+    }
+
+    #[Test]
     public function test_can_show_setlist_details(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id, 'name' => 'Youth Gathering']);
@@ -64,17 +92,31 @@ class SetlistApiTest extends TestCase
     }
 
     #[Test]
-    public function test_can_update_setlist_name(): void
+    public function test_can_update_setlist_name_and_sync_items(): void
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id, 'name' => 'Old Name']);
+        $songA = Song::factory()->create();
+        $songB = Song::factory()->create();
+
+        $updatePayload = [
+            'name' => 'Updated Name',
+            'items' => [
+                ['song_id' => $songA->id, 'type' => 'song'],
+                ['song_id' => $songB->id, 'type' => 'song'],
+            ],
+        ];
 
         $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->putJson("/api/v1/setlists/{$setlist->id}", ['name' => 'Updated Name']);
+            ->putJson("/api/v1/setlists/{$setlist->id}", $updatePayload);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Updated Name');
+            ->assertJsonPath('data.name', 'Updated Name')
+            ->assertJsonCount(2, 'data.items')
+            ->assertJsonPath('data.items.0.song_id', $songA->id)
+            ->assertJsonPath('data.items.1.song_id', $songB->id);
 
         $this->assertDatabaseHas('setlists', ['name' => 'Updated Name']);
+        $this->assertDatabaseHas('setlist_items', ['setlist_id' => $setlist->id, 'song_id' => $songA->id]);
     }
 
     #[Test]

@@ -348,9 +348,11 @@ export default function App() {
         headers: getAuthHeaders(true),
         body: JSON.stringify({
           type: 'lyric',
+          text: chunk.content,
           content: chunk.content,
           song_id: songId,
           song_title: songTitle,
+          chunk_id: chunk.id,
           lyric_chunk_id: chunk.id,
           label: chunk.label,
         }),
@@ -367,6 +369,7 @@ export default function App() {
         headers: getAuthHeaders(true),
         body: JSON.stringify({
           type: 'announcement',
+          text: content,
           content,
           song_id: null,
           lyric_chunk_id: null,

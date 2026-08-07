@@ -19,18 +19,32 @@ class LiveControlController extends Controller
     public function display(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'text' => ['required', 'string'],
+            'text' => ['nullable', 'string'],
+            'content' => ['nullable', 'string'],
             'chunk_id' => ['nullable', 'integer'],
+            'lyric_chunk_id' => ['nullable', 'integer'],
             'song_id' => ['nullable', 'integer'],
             'song_title' => ['nullable', 'string'],
             'label' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],
         ]);
 
+        $text = $validated['content'] ?? $validated['text'] ?? '';
+        if ($text === '' && !isset($validated['content']) && !isset($validated['text'])) {
+            return response()->json([
+                'message' => 'The text or content field is required.',
+                'errors' => ['text' => ['The text field is required.']],
+            ], 422);
+        }
+
+        $chunkId = $validated['lyric_chunk_id'] ?? $validated['chunk_id'] ?? null;
+
         $payload = [
             'type' => $validated['type'] ?? 'lyric',
-            'content' => $validated['text'],
-            'chunk_id' => $validated['chunk_id'] ?? null,
+            'content' => $text,
+            'text' => $text,
+            'chunk_id' => $chunkId,
+            'lyric_chunk_id' => $chunkId,
             'song_id' => $validated['song_id'] ?? null,
             'song_title' => $validated['song_title'] ?? null,
             'label' => $validated['label'] ?? null,

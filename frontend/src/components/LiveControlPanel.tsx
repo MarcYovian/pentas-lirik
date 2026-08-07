@@ -35,7 +35,7 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
     : -1;
 
   const nextChunk =
-    selectedSong && selectedSong.lyrics.length > 0
+    selectedSong && selectedSong.lyrics && selectedSong.lyrics.length > 0
       ? currentLiveIndex === -1
         ? selectedSong.lyrics[0]
         : currentLiveIndex < selectedSong.lyrics.length - 1
@@ -234,7 +234,7 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
 
             {/* Lyric Chunks Grid / List */}
             <div id="lyric-chunks-list" className="space-y-3">
-              {selectedSong.lyrics.length === 0 ? (
+              {!selectedSong.lyrics || selectedSong.lyrics.length === 0 ? (
                 <div className="text-center py-8 text-white/40 text-xs italic bg-white/[0.02] rounded-lg border border-white/10">
                   This song has no lyric chunks saved. Edit the song to add lyrics.
                 </div>

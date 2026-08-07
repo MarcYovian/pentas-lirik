@@ -93,7 +93,7 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
                   <p className="text-[11px] text-white/50 truncate mt-0.5">{song.artist || 'Unknown Artist'}</p>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-[10px] bg-white/5 text-white/60 px-1.5 py-0.5 rounded border border-white/10 mono">
-                      {song.lyrics.length} {song.lyrics.length === 1 ? 'chunk' : 'chunks'}
+                      {song.lyrics?.length || 0} {(song.lyrics?.length || 0) === 1 ? 'chunk' : 'chunks'}
                     </span>
                   </div>
                 </div>

@@ -18,16 +18,14 @@ class SongResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'artist' => $this->artist,
-            'lyric_chunks' => $this->whenLoaded('lyricChunks', function () {
-                return $this->lyricChunks->map(function ($chunk) {
-                    return [
-                        'id' => $chunk->id,
-                        'label' => $chunk->label,
-                        'content' => $chunk->content,
-                        'order' => $chunk->order,
-                    ];
-                });
-            }),
+            'lyrics' => $this->relationLoaded('lyricChunks') ? $this->lyricChunks->map(function ($chunk) {
+                return [
+                    'id' => $chunk->id,
+                    'label' => $chunk->label,
+                    'content' => $chunk->content,
+                    'order' => $chunk->order,
+                ];
+            })->values() : [],
             'created_at' => $this->created_at ? $this->created_at->toISOString() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->toISOString() : null,
         ];

@@ -98,7 +98,7 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
           >
             {setlists.map((s) => (
               <option key={s.id} value={s.id} className="bg-[#121212] text-white">
-                {s.name} ({s.items.length} items)
+                {s.name} ({s.items?.length || 0} items)
               </option>
             ))}
           </select>
@@ -118,7 +118,7 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
 
       {/* Items Rundown List */}
       <div id="setlist-items-container" className="flex-1 overflow-y-auto p-2 space-y-2">
-        {!currentSetlist || currentSetlist.items.length === 0 ? (
+        {!currentSetlist || !currentSetlist.items || currentSetlist.items.length === 0 ? (
           <div className="text-center py-12 px-4 text-white/40 text-xs italic">
             Setlist is empty. Add songs from the Song Library on the left or add a custom announcement item below.
           </div>

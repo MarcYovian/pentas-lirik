@@ -139,7 +139,7 @@ APP_DEBUG=false
 APP_URL=https://pentaslirik.yourdomain.com
 
 DB_CONNECTION=mysql
-DB_HOST=mariadb
+DB_HOST=mysql
 DB_PORT=3306
 DB_DATABASE=pentas_lirik
 DB_USERNAME=pentas_user

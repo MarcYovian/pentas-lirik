@@ -26,12 +26,14 @@ test.describe('Setlist CRUD & Rundown Management E2E Tests', () => {
     // Create new setlist
     await page.click('#btn-new-setlist');
 
-    // Add Song 1 (Amazing Grace) to rundown
-    await page.click('#btn-add-to-rundown-1');
+    // Add Amazing Grace to rundown
+    const graceCard = page.locator('#song-list-container > div', { hasText: 'Amazing Grace' });
+    await graceCard.locator('button[title="Add song to current setlist rundown"]').click();
     await expect(page.locator('#setlist-items-container')).toContainText('Amazing Grace');
 
-    // Add Song 4 (Goodness Of God) to rundown
-    await page.click('#btn-add-to-rundown-4');
+    // Add Goodness Of God to rundown
+    const godCard = page.locator('#song-list-container > div', { hasText: 'Goodness Of God' });
+    await godCard.locator('button[title="Add song to current setlist rundown"]').click();
     await expect(page.locator('#setlist-items-container')).toContainText('Goodness Of God');
   });
 
@@ -39,8 +41,9 @@ test.describe('Setlist CRUD & Rundown Management E2E Tests', () => {
     // Create new setlist
     await page.click('#btn-new-setlist');
 
-    // Add Song 1
-    await page.click('#btn-add-to-rundown-1');
+    // Add Amazing Grace
+    const graceCard = page.locator('#song-list-container > div', { hasText: 'Amazing Grace' });
+    await graceCard.locator('button[title="Add song to current setlist rundown"]').click();
 
     // Add Custom Announcement Item
     await page.click('#btn-toggle-add-announcement');
@@ -50,15 +53,16 @@ test.describe('Setlist CRUD & Rundown Management E2E Tests', () => {
     // Verify Announcement Item added
     await expect(page.locator('#setlist-items-container')).toContainText('Announcement: Warta Jemaat & Persembahan');
 
-    // Save Setlist
-    await page.click('#btn-save-setlist');
-    await expect(page.locator('#setlist-select-dropdown')).toContainText('New Event Rundown');
-
-    // Test Item Removal
+    // Test Item Removal before saving
     const removeBtn = page.locator('#setlist-items-container button[title="Remove from Setlist"]').first();
+    await expect(removeBtn).toBeVisible({ timeout: 5000 });
     await removeBtn.click();
 
     // Verify item count updated
     await expect(page.locator('#setlist-items-container')).not.toContainText('Amazing Grace');
+
+    // Save Setlist
+    await page.click('#btn-save-setlist');
+    await expect(page.locator('#setlist-select-dropdown')).toContainText('New Event Rundown');
   });
 });

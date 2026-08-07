@@ -83,6 +83,37 @@ class DatabaseSeeder extends Seeder
             'order' => 2,
         ]);
 
+        $song3 = Song::create([
+            'title' => 'What A Beautiful Name',
+            'artist' => 'Hillsong Worship',
+        ]);
+
+        LyricChunk::create([
+            'song_id' => $song3->id,
+            'label' => '[VERSE 1]',
+            'content' => "You were the Word at the beginning\nOne with God the Lord Most High",
+            'order' => 1,
+        ]);
+
+        LyricChunk::create([
+            'song_id' => $song3->id,
+            'label' => '[CHORUS]',
+            'content' => "What a beautiful Name it is\nWhat a beautiful Name it is\nThe Name of Jesus Christ my King",
+            'order' => 2,
+        ]);
+
+        $song4 = Song::create([
+            'title' => 'Goodness Of God',
+            'artist' => 'Bethel Music',
+        ]);
+
+        LyricChunk::create([
+            'song_id' => $song4->id,
+            'label' => '[VERSE 1]',
+            'content' => "I love You Lord\nFor Your mercy never fails me",
+            'order' => 1,
+        ]);
+
         // 4. Seed Sample Setlist
         $setlist = Setlist::create([
             'user_id' => $operator->id,

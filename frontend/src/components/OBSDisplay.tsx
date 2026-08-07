@@ -31,6 +31,8 @@ export const OBSDisplay: React.FC = () => {
     };
 
     fetchLiveState();
+    const pollInterval = setInterval(fetchLiveState, 500);
+    return () => clearInterval(pollInterval);
   }, []);
 
   // WebSocket Listener with Auto-Reconnect for Real-Time Updates
@@ -108,10 +110,10 @@ export const OBSDisplay: React.FC = () => {
           <motion.div
             id="obs-lyric-container"
             key={`${liveState.song_id || 0}-${liveState.lyric_chunk_id || 0}-${liveState.updated_at || liveState.content}`}
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             className="w-full max-w-7xl mx-auto text-center"
           >
             <div id="obs-lyric-text" className="font-display font-extrabold text-white text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-wide uppercase obs-text-shadow whitespace-pre-wrap drop-shadow-2xl">

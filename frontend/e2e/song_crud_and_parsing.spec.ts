@@ -36,24 +36,33 @@ test.describe('Song CRUD & Lyric Parsing E2E Tests', () => {
   });
 
   test('Scenario 2 & 4: Edit Song Lyrics & Delete Song with Confirmation', async ({ page }) => {
-    // Search created or existing song
-    await page.fill('#song-search-input', 'Amazing Grace');
-    await expect(page.locator('#song-card-1')).toBeVisible();
+    // Open New Song Modal to create temp song for editing and deletion
+    await page.click('#btn-add-new-song');
+    await page.fill('#song-title-input', 'Temp Song To Delete');
+    await page.fill('#song-artist-input', 'Temp Artist');
+    await page.fill('#song-lyrics-textarea', '[VERSE 1]\nTemp Lyric Content');
+    await page.click('#save-song-btn');
+    await expect(page.locator('#song-modal-overlay')).toBeHidden();
+
+    // Search created song
+    await page.fill('#song-search-input', 'Temp Song');
+    const songCard = page.locator('#song-list-container > div', { hasText: 'Temp Song To Delete' });
+    await expect(songCard).toBeVisible();
 
     // Click Edit Song Button
-    await page.click('#btn-edit-song-1');
+    await songCard.locator('button[title="Edit Song"]').click();
     await expect(page.locator('#song-modal-overlay')).toBeVisible();
 
     // Update Title
-    await page.fill('#song-title-input', 'Amazing Grace (My Chains Are Gone)');
+    await page.fill('#song-title-input', 'Temp Song Updated');
 
     // Save Update
     await page.click('#save-song-btn');
     await expect(page.locator('#song-modal-overlay')).toBeHidden();
-    await expect(page.locator('#song-card-1')).toContainText('Amazing Grace');
 
     // Test Delete Song Flow
-    await page.click('#btn-edit-song-1');
+    const updatedCard = page.locator('#song-list-container > div', { hasText: 'Temp Song Updated' });
+    await updatedCard.locator('button[title="Edit Song"]').click();
     await page.click('#delete-song-btn');
 
     // Confirm Deletion
@@ -61,21 +70,25 @@ test.describe('Song CRUD & Lyric Parsing E2E Tests', () => {
     await page.click('#confirm-delete-song-btn');
 
     // Verify Song Deleted
-    await expect(page.locator('#song-card-1')).toBeHidden();
+    await expect(page.locator('#song-list-container')).not.toContainText('Temp Song Updated');
   });
 
   test('Scenario 3: Switching Active Songs in Live Control Panel', async ({ page }) => {
-    // Click Song 2 in Library
-    await page.click('#song-card-2');
+    // Search 10,000 Reasons
+    await page.fill('#song-search-input', '10,000');
+    const card2 = page.locator('#song-list-container > div', { hasText: '10,000 Reasons' });
+    await card2.click();
 
     // Verify Live Control Panel updates active song banner
     await expect(page.locator('#active-song-banner')).toContainText('10,000 Reasons');
     await expect(page.locator('#lyric-chunks-list')).toContainText('[CHORUS]');
 
-    // Click Song 3 in Library
-    await page.click('#song-card-3');
+    // Search What A Beautiful Name
+    await page.fill('#song-search-input', 'Beautiful');
+    const card3 = page.locator('#song-list-container > div', { hasText: 'What A Beautiful Name' });
+    await card3.click();
 
-    // Verify Live Control Panel dynamically switches to Song 3
+    // Verify Live Control Panel dynamically switches
     await expect(page.locator('#active-song-banner')).toContainText('What A Beautiful Name');
   });
 });

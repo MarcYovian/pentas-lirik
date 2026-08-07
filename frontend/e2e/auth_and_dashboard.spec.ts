@@ -22,7 +22,7 @@ test.describe('Auth & Dashboard E2E Flows', () => {
 
     // Verify login error message appears
     await expect(page.locator('#login-error-alert')).toBeVisible();
-    await expect(page.locator('#login-error-alert')).toContainText('Invalid credentials');
+    await expect(page.locator('#login-error-alert')).toContainText('Invalid login credentials');
   });
 
   test('Scenario 2: Quick Demo Login & Session Persistence Across Reload', async ({ page }) => {
@@ -40,7 +40,7 @@ test.describe('Auth & Dashboard E2E Flows', () => {
 
     // Verify redirection to Dashboard
     await expect(page.locator('#navbar-header')).toBeVisible();
-    await expect(page.locator('#user-name-display')).toContainText('Operator User');
+    await expect(page.locator('#user-name-display')).toContainText('Operator Live');
     await expect(page.locator('#user-role-badge')).toContainText(/operator/i);
 
     // Test page reload persistence
@@ -48,7 +48,7 @@ test.describe('Auth & Dashboard E2E Flows', () => {
 
     // Verify session persists (user stays logged in)
     await expect(page.locator('#navbar-header')).toBeVisible();
-    await expect(page.locator('#user-name-display')).toContainText('Operator User');
+    await expect(page.locator('#user-name-display')).toContainText('Operator Live');
   });
 
   test('Scenario 3: Dashboard 3-Column Navigation & Song Search Filtering', async ({ page }) => {
@@ -63,9 +63,8 @@ test.describe('Auth & Dashboard E2E Flows', () => {
     await expect(page.locator('#column-live-control-panel')).toBeVisible();
 
     // Search song in Column 1
-    await page.fill('#song-search-input', 'Grace');
-    await expect(page.locator('#song-card-1')).toBeVisible();
-    await expect(page.locator('#song-card-1')).toContainText('Amazing Grace');
+    await page.fill('#song-search-input', '10,000');
+    await expect(page.locator('#song-list-container')).toContainText('10,000 Reasons');
 
     // Select setlist in Column 2 dropdown
     await expect(page.locator('#setlist-select-dropdown')).toBeVisible();

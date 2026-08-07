@@ -48,6 +48,10 @@ class SetlistController extends Controller
             'name' => $request->validated('name'),
         ]);
 
+        if ($request->has('items') && is_array($request->input('items'))) {
+            $this->syncSetlistItems($setlist, $request->input('items'));
+        }
+
         $setlist->load(['setlistItems.song.lyricChunks']);
 
         return (new SetlistResource($setlist))
@@ -56,7 +60,7 @@ class SetlistController extends Controller
     }
 
     /**
-     * Update the specified setlist name.
+     * Update the specified setlist name & items.
      */
     public function update(StoreSetlistRequest $request, Setlist $setlist): SetlistResource
     {
@@ -64,9 +68,32 @@ class SetlistController extends Controller
             'name' => $request->validated('name'),
         ]);
 
+        if ($request->has('items') && is_array($request->input('items'))) {
+            $this->syncSetlistItems($setlist, $request->input('items'));
+        }
+
         $setlist->load(['setlistItems.song.lyricChunks']);
 
         return new SetlistResource($setlist);
+    }
+
+    /**
+     * Helper to sync items array for a setlist.
+     */
+    protected function syncSetlistItems(Setlist $setlist, array $items): void
+    {
+        DB::transaction(function () use ($setlist, $items) {
+            $setlist->setlistItems()->delete();
+            $order = 1;
+            foreach ($items as $item) {
+                if (isset($item['song_id']) && $item['song_id']) {
+                    $setlist->setlistItems()->create([
+                        'song_id' => $item['song_id'],
+                        'order' => $order++,
+                    ]);
+                }
+            }
+        });
     }
 
     /**

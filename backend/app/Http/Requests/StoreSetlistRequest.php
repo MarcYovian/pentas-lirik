@@ -23,6 +23,9 @@ class StoreSetlistRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'items' => ['nullable', 'array'],
+            'items.*.song_id' => ['nullable', 'integer'],
+            'items.*.type' => ['nullable', 'string'],
         ];
     }
 }

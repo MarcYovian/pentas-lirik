@@ -120,8 +120,7 @@ Salin file konfigurasi `.env` di lokasi repositori `/apps/repos/pentas-lirik`:
 ```bash
 cd /apps/repos/pentas-lirik
 
-# Setup environment root & backend
-cp .env.example .env
+# Setup environment file backend (otomatis digunakan oleh seluruh container Docker)
 cp backend/.env.example backend/.env
 ```
 
@@ -132,12 +131,20 @@ nano backend/.env
 
 Isi file `backend/.env`:
 ```env
-APP_NAME="PentasLirik"
+APP_NAME=Lyrics
 APP_ENV=production
 APP_KEY= # Dibuat otomatis oleh command artisan key:generate
 APP_DEBUG=false
-APP_URL=https://pentaslirik.yourdomain.com
+APP_URL=https://lyrics.kapelstyohanesrasul.com
 
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+LOG_CHANNEL=stack
+LOG_LEVEL=info
+
+# Database Configuration (Terhubung ke kontainer mysql di Docker)
 DB_CONNECTION=mysql
 DB_HOST=mysql
 DB_PORT=3306
@@ -145,27 +152,38 @@ DB_DATABASE=pentas_lirik
 DB_USERNAME=pentas_user
 DB_PASSWORD=SecurePasswordProd123!
 
+# Redis Configuration (Terhubung ke kontainer redis di Docker)
 SESSION_DRIVER=redis
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
 QUEUE_CONNECTION=redis
 CACHE_STORE=redis
+
+REDIS_CLIENT=phpredis
 REDIS_HOST=redis
 REDIS_PASSWORD=null
 REDIS_PORT=6379
 REDIS_PREFIX=pentas_lirik_
 
+# Broadcast & WebSocket Reverb Configuration
 BROADCAST_CONNECTION=reverb
 REVERB_APP_ID=pentaslirik_prod
 REVERB_APP_KEY=pentaslirik_key_prod
 REVERB_APP_SECRET=pentaslirik_secret_prod
-REVERB_HOST=pentaslirik.yourdomain.com
+REVERB_HOST=lyrics.kapelstyohanesrasul.com
 REVERB_PORT=443
 REVERB_SCHEME=https
 
-VITE_API_BASE_URL=https://pentaslirik.yourdomain.com/api/v1
-VITE_REVERB_APP_KEY=pentaslirik_key_prod
-VITE_REVERB_HOST=pentaslirik.yourdomain.com
-VITE_REVERB_PORT=443
-VITE_REVERB_SCHEME=https
+# Frontend Vite Configuration
+VITE_APP_NAME="${APP_NAME}"
+VITE_API_BASE_URL="${APP_URL}/api/v1"
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="${REVERB_HOST}"
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 
 # Cloudflare Tunnel Token
 CLOUDFLARE_TUNNEL_TOKEN=eyJhYmNkZWZna... # Masukkan token dari Cloudflare Zero Trust

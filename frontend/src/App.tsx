@@ -51,13 +51,29 @@ export default function App() {
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isUserMgmtModalOpen, setIsUserMgmtModalOpen] = useState(false);
 
+  // Helper to construct authenticated API headers
+  const getAuthHeaders = (hasBody = true) => {
+    const savedToken = localStorage.getItem('pentaslirik_token') || token;
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+    };
+    if (hasBody) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (savedToken) {
+      headers['Authorization'] = `Bearer ${savedToken}`;
+    }
+    return headers;
+  };
+
   // Fetch initial data
   const loadData = useCallback(async () => {
     try {
+      const headers = getAuthHeaders(false);
       const [songsRes, setlistsRes, liveStateRes] = await Promise.all([
-        fetch('/api/v1/songs').then((r) => r.json()),
-        fetch('/api/v1/setlists').then((r) => r.json()),
-        fetch('/api/v1/live/state').then((r) => r.json()),
+        fetch('/api/v1/songs', { headers }).then((r) => r.json()),
+        fetch('/api/v1/setlists', { headers }).then((r) => r.json()),
+        fetch('/api/v1/live/state', { headers }).then((r) => r.json()),
       ]);
 
       if (songsRes.data) setSongs(songsRes.data);
@@ -71,7 +87,7 @@ export default function App() {
     } catch (err) {
       console.error('Failed to load application data:', err);
     }
-  }, [currentSetlist]);
+  }, [currentSetlist, token]);
 
   useEffect(() => {
     if (user) {
@@ -151,7 +167,7 @@ export default function App() {
       if (editingSong) {
         const res = await fetch(`/api/v1/songs/${editingSong.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(true),
           body: JSON.stringify(songData),
         });
         const json = await res.json();
@@ -164,7 +180,7 @@ export default function App() {
       } else {
         const res = await fetch('/api/v1/songs', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(true),
           body: JSON.stringify(songData),
         });
         const json = await res.json();
@@ -179,7 +195,10 @@ export default function App() {
 
   const handleDeleteSong = async (songId: number) => {
     try {
-      const res = await fetch(`/api/v1/songs/${songId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/v1/songs/${songId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(false),
+      });
       if (res.ok) {
         setSongs((prev) => prev.filter((s) => s.id !== songId));
         if (selectedSong?.id === songId) {
@@ -216,7 +235,7 @@ export default function App() {
     try {
       const res = await fetch(`/api/v1/setlists/${currentSetlist.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ name, items }),
       });
       const json = await res.json();
@@ -227,7 +246,7 @@ export default function App() {
         // Fallback for new unsaved setlists
         const createRes = await fetch('/api/v1/setlists', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(true),
           body: JSON.stringify({ name, items }),
         });
         const createJson = await createRes.json();
@@ -326,7 +345,7 @@ export default function App() {
     try {
       await fetch('/api/v1/live/send-lyric', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           type: 'lyric',
           content: chunk.content,
@@ -345,7 +364,7 @@ export default function App() {
     try {
       await fetch('/api/v1/live/send-lyric', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           type: 'announcement',
           content,
@@ -363,6 +382,7 @@ export default function App() {
     try {
       await fetch('/api/v1/live/clear', {
         method: 'POST',
+        headers: getAuthHeaders(false),
       });
     } catch (err) {
       console.error('Error clearing screen:', err);

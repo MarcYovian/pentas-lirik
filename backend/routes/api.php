@@ -24,6 +24,7 @@ Route::prefix('v1')->group(function () {
 
         // Live Control API (Operator actions)
         Route::post('/live/display', [\App\Http\Controllers\Api\V1\LiveControlController::class, 'display']);
+        Route::post('/live/send-lyric', [\App\Http\Controllers\Api\V1\LiveControlController::class, 'display']);
         Route::post('/live/clear', [\App\Http\Controllers\Api\V1\LiveControlController::class, 'clear']);
 
         // Songs & Lyrics Management API

@@ -269,7 +269,7 @@ docker compose up -d --build frontend backend
 
 # 7. Restart Service Queue Worker & Reverb WebSocket Server
 docker compose exec backend php artisan queue:restart
-docker compose restart reverb
+docker compose exec backend supervisorctl restart reverb
 ```
 
 ---

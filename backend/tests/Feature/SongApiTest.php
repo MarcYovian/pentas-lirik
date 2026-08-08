@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Song;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -14,13 +15,11 @@ class SongApiTest extends TestCase
 
     private User $operator;
 
-    private string $token;
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->operator = User::factory()->create(['role' => 'OPERATOR']);
-        $this->token = $this->operator->createToken('test_token')->plainTextToken;
+        Sanctum::actingAs($this->operator);
     }
 
     #[Test]
@@ -28,10 +27,9 @@ class SongApiTest extends TestCase
     {
         Song::factory()->count(3)->create();
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson('/api/v1/songs');
+        $response = $this->getJson('/api/v1/songs');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     '*' => ['id', 'title', 'artist', 'created_at', 'updated_at'],
@@ -45,10 +43,9 @@ class SongApiTest extends TestCase
         Song::create(['title' => 'Amazing Grace', 'artist' => 'John Newton']);
         Song::create(['title' => 'Cornerstone', 'artist' => 'Hillsong']);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson('/api/v1/songs?q=Grace');
+        $response = $this->getJson('/api/v1/songs?q=Grace');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.title', 'Amazing Grace');
     }
@@ -62,10 +59,9 @@ class SongApiTest extends TestCase
             'lyrics' => "[VERSE 1]\nO Lord my God, when I in awesome wonder\n[CHORUS]\nThen sings my soul, my Savior God to Thee",
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson('/api/v1/songs', $payload);
+        $response = $this->postJson('/api/v1/songs', $payload);
 
-        $response->assertStatus(201)
+        $response->assertCreated()
             ->assertJsonPath('data.title', 'How Great Thou Art')
             ->assertJsonCount(2, 'data.lyric_chunks')
             ->assertJsonPath('data.lyric_chunks.0.label', '[VERSE 1]')
@@ -84,10 +80,9 @@ class SongApiTest extends TestCase
             'lyrics_raw' => "[BAIT 1]\nKami unjukkan kami sembahkan\nkebebasan dan kemerdekaan.\n\n[BAIT 2]\nIngatan, budi, kehendak hati\nkami serahkan pada-Mu, Tuhan.",
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson('/api/v1/songs', $payload);
+        $response = $this->postJson('/api/v1/songs', $payload);
 
-        $response->assertStatus(201)
+        $response->assertCreated()
             ->assertJsonPath('data.title', 'Kami Unjukkan')
             ->assertJsonCount(2, 'data.lyric_chunks')
             ->assertJsonPath('data.lyric_chunks.0.label', '[BAIT 1]')
@@ -107,10 +102,9 @@ class SongApiTest extends TestCase
             'order' => 1,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson('/api/v1/songs/'.$song->id);
+        $response = $this->getJson('/api/v1/songs/'.$song->id);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.id', $song->id)
             ->assertJsonCount(1, 'data.lyric_chunks');
     }
@@ -127,10 +121,9 @@ class SongApiTest extends TestCase
             'lyrics' => "[CHORUS]\nNew Chorus Content",
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->putJson('/api/v1/songs/'.$song->id, $updatePayload);
+        $response = $this->putJson('/api/v1/songs/'.$song->id, $updatePayload);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.title', 'New Title')
             ->assertJsonPath('data.lyric_chunks.0.label', '[CHORUS]');
 
@@ -145,10 +138,9 @@ class SongApiTest extends TestCase
         $song = Song::create(['title' => 'To Delete', 'artist' => 'Artist']);
         $song->lyricChunks()->create(['label' => '[VERSE 1]', 'content' => 'Content', 'order' => 1]);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->deleteJson('/api/v1/songs/'.$song->id);
+        $response = $this->deleteJson('/api/v1/songs/'.$song->id);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson(['message' => 'Song deleted successfully.']);
 
         $this->assertDatabaseMissing('songs', ['id' => $song->id]);
@@ -158,7 +150,10 @@ class SongApiTest extends TestCase
     #[Test]
     public function test_unauthenticated_user_cannot_access_songs(): void
     {
+        // Flush auth guard for unauthenticated request
+        auth()->forgetGuards();
+
         $response = $this->getJson('/api/v1/songs');
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
     }
 }

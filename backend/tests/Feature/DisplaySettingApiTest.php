@@ -8,19 +8,13 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class DisplaySettingApiTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        DisplaySetting::query()->delete();
-        Cache::forget('active_display_setting');
-    }
 
     #[Test]
     public function test_can_get_active_display_settings(): void
@@ -34,7 +28,7 @@ class DisplaySettingApiTest extends TestCase
 
         $response = $this->getJson('/api/v1/display/settings');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     'id',
@@ -73,7 +67,7 @@ class DisplaySettingApiTest extends TestCase
         Event::fake();
 
         $user = User::factory()->create(['role' => 'OPERATOR']);
-        $token = $user->createToken('test_token')->plainTextToken;
+        Sanctum::actingAs($user);
 
         DisplaySetting::create([
             'name' => 'Default Style',
@@ -95,10 +89,9 @@ class DisplaySettingApiTest extends TestCase
             'border_radius' => 16,
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/v1/display/settings', $updatePayload);
+        $response = $this->putJson('/api/v1/display/settings', $updatePayload);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson([
                 'message' => 'Display settings updated and broadcasted successfully.',
                 'data' => [
@@ -125,33 +118,30 @@ class DisplaySettingApiTest extends TestCase
     public function test_validates_display_settings_input(): void
     {
         $user = User::factory()->create(['role' => 'OPERATOR']);
-        $token = $user->createToken('test_token')->plainTextToken;
+        Sanctum::actingAs($user);
 
         // Test invalid font_size (5px is below minimum 16px)
-        $responseLowFontSize = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/v1/display/settings', [
-                'font_size' => 5,
-            ]);
+        $responseLowFontSize = $this->putJson('/api/v1/display/settings', [
+            'font_size' => 5,
+        ]);
 
-        $responseLowFontSize->assertStatus(422)
+        $responseLowFontSize->assertUnprocessable()
             ->assertJsonValidationErrors(['font_size']);
 
         // Test invalid font_size (200px is above maximum 120px)
-        $responseHighFontSize = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/v1/display/settings', [
-                'font_size' => 200,
-            ]);
+        $responseHighFontSize = $this->putJson('/api/v1/display/settings', [
+            'font_size' => 200,
+        ]);
 
-        $responseHighFontSize->assertStatus(422)
+        $responseHighFontSize->assertUnprocessable()
             ->assertJsonValidationErrors(['font_size']);
 
         // Test invalid color string
-        $responseInvalidColor = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/v1/display/settings', [
-                'text_color' => 'not-a-color',
-            ]);
+        $responseInvalidColor = $this->putJson('/api/v1/display/settings', [
+            'text_color' => 'not-a-color',
+        ]);
 
-        $responseInvalidColor->assertStatus(422)
+        $responseInvalidColor->assertUnprocessable()
             ->assertJsonValidationErrors(['text_color']);
     }
 

@@ -6,6 +6,7 @@ use App\Models\Setlist;
 use App\Models\Song;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -15,13 +16,11 @@ class SetlistApiTest extends TestCase
 
     private User $user;
 
-    private string $token;
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->user = User::factory()->create(['role' => 'OPERATOR']);
-        $this->token = $this->user->createToken('test_token')->plainTextToken;
+        Sanctum::actingAs($this->user);
     }
 
     #[Test]
@@ -29,10 +28,9 @@ class SetlistApiTest extends TestCase
     {
         Setlist::factory()->count(2)->create(['user_id' => $this->user->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson('/api/v1/setlists');
+        $response = $this->getJson('/api/v1/setlists');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonCount(2, 'data');
     }
 
@@ -41,10 +39,9 @@ class SetlistApiTest extends TestCase
     {
         $payload = ['name' => 'Sunday Service 10 AM'];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson('/api/v1/setlists', $payload);
+        $response = $this->postJson('/api/v1/setlists', $payload);
 
-        $response->assertStatus(201)
+        $response->assertCreated()
             ->assertJsonPath('data.name', 'Sunday Service 10 AM')
             ->assertJsonPath('data.user_id', $this->user->id);
 
@@ -65,10 +62,9 @@ class SetlistApiTest extends TestCase
             ],
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson('/api/v1/setlists', $payload);
+        $response = $this->postJson('/api/v1/setlists', $payload);
 
-        $response->assertStatus(201)
+        $response->assertCreated()
             ->assertJsonPath('data.name', 'Ibadah Minggu Pagi')
             ->assertJsonCount(2, 'data.items')
             ->assertJsonPath('data.items.0.song_id', $song1->id)
@@ -84,10 +80,9 @@ class SetlistApiTest extends TestCase
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id, 'name' => 'Youth Gathering']);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson("/api/v1/setlists/{$setlist->id}");
+        $response = $this->getJson("/api/v1/setlists/{$setlist->id}");
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.id', $setlist->id)
             ->assertJsonPath('data.name', 'Youth Gathering');
     }
@@ -107,10 +102,9 @@ class SetlistApiTest extends TestCase
             ],
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->putJson("/api/v1/setlists/{$setlist->id}", $updatePayload);
+        $response = $this->putJson("/api/v1/setlists/{$setlist->id}", $updatePayload);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.name', 'Updated Name')
             ->assertJsonCount(2, 'data.items')
             ->assertJsonPath('data.items.0.song_id', $songA->id)
@@ -125,10 +119,9 @@ class SetlistApiTest extends TestCase
     {
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->deleteJson("/api/v1/setlists/{$setlist->id}");
+        $response = $this->deleteJson("/api/v1/setlists/{$setlist->id}");
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson(['message' => 'Setlist deleted successfully.']);
 
         $this->assertDatabaseMissing('setlists', ['id' => $setlist->id]);
@@ -140,10 +133,9 @@ class SetlistApiTest extends TestCase
         $setlist = Setlist::factory()->create(['user_id' => $this->user->id]);
         $song = Song::factory()->create();
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson("/api/v1/setlists/{$setlist->id}/items", ['song_id' => $song->id]);
+        $response = $this->postJson("/api/v1/setlists/{$setlist->id}/items", ['song_id' => $song->id]);
 
-        $response->assertStatus(201)
+        $response->assertCreated()
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.song_id', $song->id)
             ->assertJsonPath('data.items.0.order', 1);
@@ -165,10 +157,9 @@ class SetlistApiTest extends TestCase
         $item1 = $setlist->setlistItems()->create(['song_id' => $song1->id, 'order' => 1]);
         $item2 = $setlist->setlistItems()->create(['song_id' => $song2->id, 'order' => 2]);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->deleteJson("/api/v1/setlists/{$setlist->id}/items/{$item1->id}");
+        $response = $this->deleteJson("/api/v1/setlists/{$setlist->id}/items/{$item1->id}");
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.song_id', $song2->id)
             ->assertJsonPath('data.items.0.order', 1);
@@ -194,10 +185,9 @@ class SetlistApiTest extends TestCase
             'item_ids' => [$item3->id, $item1->id, $item2->id],
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->putJson("/api/v1/setlists/{$setlist->id}/reorder", $reorderPayload);
+        $response = $this->putJson("/api/v1/setlists/{$setlist->id}/reorder", $reorderPayload);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.items.0.id', $item3->id)
             ->assertJsonPath('data.items.0.order', 1)
             ->assertJsonPath('data.items.1.id', $item1->id)

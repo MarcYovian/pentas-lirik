@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -27,7 +28,7 @@ class AuthApiTest extends TestCase
             'device_name' => 'MacBook Pro Chrome',
         ]);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     'user' => ['id', 'name', 'email', 'role'],
@@ -50,16 +51,16 @@ class AuthApiTest extends TestCase
     public function test_user_cannot_login_with_invalid_password(): void
     {
         User::factory()->create([
-            'email' => 'admin@pentaslirik.local',
+            'email' => 'admin_invalid@pentaslirik.local',
             'password' => Hash::make('secret123'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'admin@pentaslirik.local',
+            'email' => 'admin_invalid@pentaslirik.local',
             'password' => 'wrongpassword',
         ]);
 
-        $response->assertStatus(401)
+        $response->assertUnauthorized()
             ->assertJson([
                 'message' => 'Invalid login credentials.',
             ]);
@@ -69,36 +70,36 @@ class AuthApiTest extends TestCase
     public function test_user_can_login_from_multiple_devices_simultaneously(): void
     {
         $user = User::factory()->create([
-            'email' => 'operator@pentaslirik.local',
+            'email' => 'operator_multi@pentaslirik.local',
             'password' => Hash::make('password123'),
         ]);
 
         // Login Device 1
         $res1 = $this->postJson('/api/v1/auth/login', [
-            'email' => 'operator@pentaslirik.local',
+            'email' => 'operator_multi@pentaslirik.local',
             'password' => 'password123',
             'device_name' => 'Desktop Operator',
         ]);
-        $res1->assertStatus(200);
+        $res1->assertOk();
         $token1 = $res1->json('data.token');
 
         // Login Device 2
         $res2 = $this->postJson('/api/v1/auth/login', [
-            'email' => 'operator@pentaslirik.local',
+            'email' => 'operator_multi@pentaslirik.local',
             'password' => 'password123',
             'device_name' => 'Mobile Operator Phone',
         ]);
-        $res2->assertStatus(200);
+        $res2->assertOk();
         $token2 = $res2->json('data.token');
 
         // Verify both tokens are active and valid
         $this->withHeader('Authorization', 'Bearer '.$token1)
             ->getJson('/api/v1/auth/me')
-            ->assertStatus(200);
+            ->assertOk();
 
         $this->withHeader('Authorization', 'Bearer '.$token2)
             ->getJson('/api/v1/auth/me')
-            ->assertStatus(200);
+            ->assertOk();
 
         $this->assertCount(2, $user->fresh()->tokens);
     }
@@ -107,12 +108,11 @@ class AuthApiTest extends TestCase
     public function test_authenticated_user_can_get_profile(): void
     {
         $user = User::factory()->create(['role' => 'OPERATOR']);
-        $token = $user->createToken('test_token')->plainTextToken;
+        Sanctum::actingAs($user);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/v1/auth/me');
+        $response = $this->getJson('/api/v1/auth/me');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson([
                 'data' => [
                     'user' => [
@@ -135,7 +135,7 @@ class AuthApiTest extends TestCase
         $response = $this->withHeader('Authorization', 'Bearer '.$token1)
             ->postJson('/api/v1/auth/logout');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson([
                 'message' => 'Successfully logged out of this device.',
             ]);
@@ -146,12 +146,12 @@ class AuthApiTest extends TestCase
         // token1 is now invalid
         $this->withHeader('Authorization', 'Bearer '.$token1)
             ->getJson('/api/v1/auth/me')
-            ->assertStatus(401);
+            ->assertUnauthorized();
 
         // token2 remains valid
         $this->withHeader('Authorization', 'Bearer '.$token2)
             ->getJson('/api/v1/auth/me')
-            ->assertStatus(200);
+            ->assertOk();
 
         $this->assertCount(1, $user->fresh()->tokens);
     }
@@ -167,7 +167,7 @@ class AuthApiTest extends TestCase
         $response = $this->withHeader('Authorization', 'Bearer '.$token1)
             ->postJson('/api/v1/auth/logout-all');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson([
                 'message' => 'Successfully logged out of all devices.',
             ]);
@@ -178,13 +178,13 @@ class AuthApiTest extends TestCase
         // Both tokens are now invalid
         $this->withHeader('Authorization', 'Bearer '.$token1)
             ->getJson('/api/v1/auth/me')
-            ->assertStatus(401);
+            ->assertUnauthorized();
 
         auth()->forgetGuards();
 
         $this->withHeader('Authorization', 'Bearer '.$token2)
             ->getJson('/api/v1/auth/me')
-            ->assertStatus(401);
+            ->assertUnauthorized();
 
         $this->assertCount(0, $user->fresh()->tokens);
     }
@@ -193,12 +193,11 @@ class AuthApiTest extends TestCase
     public function test_admin_can_access_admin_route(): void
     {
         $admin = User::factory()->create(['role' => 'ADMIN']);
-        $token = $admin->createToken('admin_token')->plainTextToken;
+        Sanctum::actingAs($admin);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/v1/admin/dashboard');
+        $response = $this->getJson('/api/v1/admin/dashboard');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson(['message' => 'Welcome Admin']);
     }
 
@@ -206,12 +205,11 @@ class AuthApiTest extends TestCase
     public function test_operator_cannot_access_admin_route(): void
     {
         $operator = User::factory()->create(['role' => 'OPERATOR']);
-        $token = $operator->createToken('operator_token')->plainTextToken;
+        Sanctum::actingAs($operator);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/v1/admin/dashboard');
+        $response = $this->getJson('/api/v1/admin/dashboard');
 
-        $response->assertStatus(403)
+        $response->assertForbidden()
             ->assertJson(['message' => 'Forbidden. You do not have access to this resource.']);
     }
 
@@ -220,6 +218,6 @@ class AuthApiTest extends TestCase
     {
         $response = $this->getJson('/api/v1/auth/me');
 
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
     }
 }

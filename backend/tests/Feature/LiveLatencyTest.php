@@ -6,6 +6,7 @@ use App\Events\DisplayUpdateEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -15,13 +16,11 @@ class LiveLatencyTest extends TestCase
 
     private User $operator;
 
-    private string $token;
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->operator = User::factory()->create(['role' => 'OPERATOR']);
-        $this->token = $this->operator->createToken('latency_test_token')->plainTextToken;
+        Sanctum::actingAs($this->operator);
     }
 
     #[Test]
@@ -39,13 +38,12 @@ class LiveLatencyTest extends TestCase
 
         $startTime = microtime(true);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson('/api/v1/live/display', $payload);
+        $response = $this->postJson('/api/v1/live/display', $payload);
 
         $endTime = microtime(true);
         $durationMs = ($endTime - $startTime) * 1000;
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         Event::assertDispatched(DisplayUpdateEvent::class);
 
@@ -63,7 +61,7 @@ class LiveLatencyTest extends TestCase
         $endTime = microtime(true);
         $durationMs = ($endTime - $startTime) * 1000;
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         // Assert state fetch latency is under 50ms
         $this->assertLessThan(50, $durationMs, "Public live state fetch latency should be < 50ms (Actual: {$durationMs}ms)");

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -13,35 +14,31 @@ class UserApiTest extends TestCase
 
     private User $admin;
 
-    private string $adminToken;
-
     private User $operator;
-
-    private string $operatorToken;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->admin = User::factory()->create(['role' => 'ADMIN']);
-        $this->adminToken = $this->admin->createToken('admin_token')->plainTextToken;
-
         $this->operator = User::factory()->create(['role' => 'OPERATOR']);
-        $this->operatorToken = $this->operator->createToken('op_token')->plainTextToken;
     }
 
     #[Test]
     public function test_admin_can_list_users(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->adminToken)
-            ->getJson('/api/v1/users');
+        Sanctum::actingAs($this->admin);
 
-        $response->assertStatus(200)
+        $response = $this->getJson('/api/v1/users');
+
+        $response->assertOk()
             ->assertJsonCount(2, 'data');
     }
 
     #[Test]
     public function test_admin_can_create_new_user(): void
     {
+        Sanctum::actingAs($this->admin);
+
         $payload = [
             'name' => 'New Operator',
             'email' => 'newop@pentaslirik.local',
@@ -49,10 +46,9 @@ class UserApiTest extends TestCase
             'role' => 'operator',
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->adminToken)
-            ->postJson('/api/v1/users', $payload);
+        $response = $this->postJson('/api/v1/users', $payload);
 
-        $response->assertStatus(201)
+        $response->assertCreated()
             ->assertJsonPath('data.name', 'New Operator')
             ->assertJsonPath('data.role', 'operator');
 
@@ -62,12 +58,13 @@ class UserApiTest extends TestCase
     #[Test]
     public function test_admin_can_update_user_role(): void
     {
+        Sanctum::actingAs($this->admin);
+
         $targetUser = User::factory()->create(['role' => 'OPERATOR']);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->adminToken)
-            ->putJson("/api/v1/users/{$targetUser->id}", ['role' => 'admin']);
+        $response = $this->putJson("/api/v1/users/{$targetUser->id}", ['role' => 'admin']);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.role', 'admin');
 
         $this->assertDatabaseHas('users', ['id' => $targetUser->id, 'role' => 'ADMIN']);
@@ -76,12 +73,13 @@ class UserApiTest extends TestCase
     #[Test]
     public function test_admin_can_delete_user(): void
     {
+        Sanctum::actingAs($this->admin);
+
         $targetUser = User::factory()->create(['role' => 'OPERATOR']);
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->adminToken)
-            ->deleteJson("/api/v1/users/{$targetUser->id}");
+        $response = $this->deleteJson("/api/v1/users/{$targetUser->id}");
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJson(['message' => 'User account deleted successfully.']);
 
         $this->assertDatabaseMissing('users', ['id' => $targetUser->id]);
@@ -90,8 +88,9 @@ class UserApiTest extends TestCase
     #[Test]
     public function test_admin_cannot_delete_self(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->adminToken)
-            ->deleteJson("/api/v1/users/{$this->admin->id}");
+        Sanctum::actingAs($this->admin);
+
+        $response = $this->deleteJson("/api/v1/users/{$this->admin->id}");
 
         $response->assertStatus(400)
             ->assertJson(['message' => 'You cannot delete your own account.']);
@@ -100,9 +99,10 @@ class UserApiTest extends TestCase
     #[Test]
     public function test_operator_cannot_access_user_management(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->operatorToken)
-            ->getJson('/api/v1/users');
+        Sanctum::actingAs($this->operator);
 
-        $response->assertStatus(403);
+        $response = $this->getJson('/api/v1/users');
+
+        $response->assertForbidden();
     }
 }

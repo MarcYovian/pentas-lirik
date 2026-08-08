@@ -7,6 +7,7 @@ use App\Events\DisplayUpdateEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -16,13 +17,11 @@ class LiveControlApiTest extends TestCase
 
     private User $operator;
 
-    private string $token;
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->operator = User::factory()->create(['role' => 'OPERATOR']);
-        $this->token = $this->operator->createToken('test_token')->plainTextToken;
+        Sanctum::actingAs($this->operator);
     }
 
     #[Test]
@@ -38,10 +37,9 @@ class LiveControlApiTest extends TestCase
             'label' => '[VERSE 1]',
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson('/api/v1/live/display', $payload);
+        $response = $this->postJson('/api/v1/live/display', $payload);
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.content', 'Amazing grace! How sweet the sound')
             ->assertJsonPath('data.song_title', 'Amazing Grace')
             ->assertJsonPath('data.type', 'lyric');
@@ -52,7 +50,7 @@ class LiveControlApiTest extends TestCase
 
         // Test public GET /api/v1/state/live returns updated state
         $stateResponse = $this->getJson('/api/v1/state/live');
-        $stateResponse->assertStatus(200)
+        $stateResponse->assertOk()
             ->assertJsonPath('data.content', 'Amazing grace! How sweet the sound');
     }
 
@@ -61,10 +59,9 @@ class LiveControlApiTest extends TestCase
     {
         Event::fake();
 
-        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->postJson('/api/v1/live/clear');
+        $response = $this->postJson('/api/v1/live/clear');
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonPath('data.type', 'clear')
             ->assertJsonPath('data.content', null);
 
@@ -72,14 +69,17 @@ class LiveControlApiTest extends TestCase
 
         // Test public GET /api/v1/state/live returns clear state
         $stateResponse = $this->getJson('/api/v1/state/live');
-        $stateResponse->assertStatus(200)
+        $stateResponse->assertOk()
             ->assertJsonPath('data.type', 'clear');
     }
 
     #[Test]
     public function test_unauthenticated_user_cannot_trigger_live_display(): void
     {
+        // Flush auth guard for unauthenticated request
+        auth()->forgetGuards();
+
         $response = $this->postJson('/api/v1/live/display', ['text' => 'Unauthorized']);
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
     }
 }

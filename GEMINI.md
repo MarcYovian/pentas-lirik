@@ -102,7 +102,7 @@ Setiap kali menyelesaikan tugas atau fitur baru di PentasLirik, jalankan siklus 
 ### **Backend (Laravel 13 di dalam Container `backend`)**
 - **Jalankan Artisan Command**: `docker compose exec backend php artisan [command]`
 - **Menjalankan Database Migration**: `docker compose exec backend php artisan migrate`
-- **Menjalankan Test (PHPUnit)**: `docker compose exec backend php artisan test`
+- **Menjalankan Test (PHPUnit)**: `docker compose exec backend php artisan test` *(Gunakan flag `-T` seperti `docker compose exec -T ...` untuk eksekusi non-interaktif di skrip AI/CI-CD)*
 - **Code Formatter (Pint)**: `docker compose exec backend ./vendor/bin/pint`
 
 ### **Frontend (React / Node di dalam Container `frontend`)**

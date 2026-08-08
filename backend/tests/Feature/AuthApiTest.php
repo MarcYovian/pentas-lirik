@@ -189,7 +189,6 @@ class AuthApiTest extends TestCase
         $this->assertCount(0, $user->fresh()->tokens);
     }
 
-
     #[Test]
     public function test_admin_can_access_admin_route(): void
     {

@@ -30,7 +30,7 @@ class LiveControlController extends Controller
         ]);
 
         $text = $validated['content'] ?? $validated['text'] ?? '';
-        if ($text === '' && !isset($validated['content']) && !isset($validated['text'])) {
+        if ($text === '' && ! isset($validated['content']) && ! isset($validated['text'])) {
             return response()->json([
                 'message' => 'The text or content field is required.',
                 'errors' => ['text' => ['The text field is required.']],

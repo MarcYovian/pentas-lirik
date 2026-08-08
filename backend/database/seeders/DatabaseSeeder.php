@@ -113,7 +113,6 @@ class DatabaseSeeder extends Seeder
             ['order' => 2]
         );
 
-
         // 5. Seed Default Display Settings
         $this->call(DisplaySettingSeeder::class);
     }

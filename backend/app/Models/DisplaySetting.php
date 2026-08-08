@@ -61,6 +61,7 @@ class DisplaySetting extends Model
         return DB::transaction(function () {
             self::where('is_active', true)->update(['is_active' => false]);
             $this->is_active = true;
+
             return $this->save();
         });
     }

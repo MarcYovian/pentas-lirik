@@ -12,8 +12,11 @@ class UserApiTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private string $adminToken;
+
     private User $operator;
+
     private string $operatorToken;
 
     protected function setUp(): void

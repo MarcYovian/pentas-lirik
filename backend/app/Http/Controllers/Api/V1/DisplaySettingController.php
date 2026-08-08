@@ -45,6 +45,7 @@ class DisplaySettingController extends Controller
                     'max_width' => 'max-w-7xl',
                 ]
             );
+
             return $setting->toArray();
         });
 
@@ -59,10 +60,10 @@ class DisplaySettingController extends Controller
     public function update(UpdateDisplaySettingRequest $request): JsonResponse
     {
         $setting = DisplaySetting::getActiveSetting() ?? DisplaySetting::firstOrCreate(['name' => 'Default Style']);
-        
+
         $setting->update($request->validated());
         $freshSetting = $setting->fresh();
-        
+
         // Invalidate and refresh cache with array representation
         Cache::forget(self::CACHE_KEY);
         Cache::put(self::CACHE_KEY, $freshSetting->toArray(), 86400);
@@ -132,7 +133,7 @@ class DisplaySettingController extends Controller
     public function activatePreset(int $id): JsonResponse
     {
         $preset = DisplaySetting::findOrFail($id);
-        
+
         $preset->activate();
         $freshPreset = $preset->fresh();
 

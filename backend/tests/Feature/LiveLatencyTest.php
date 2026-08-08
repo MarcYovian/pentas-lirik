@@ -14,6 +14,7 @@ class LiveLatencyTest extends TestCase
     use RefreshDatabase;
 
     private User $operator;
+
     private string $token;
 
     protected function setUp(): void

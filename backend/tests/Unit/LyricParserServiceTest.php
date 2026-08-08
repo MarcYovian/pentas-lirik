@@ -16,7 +16,7 @@ class LyricParserServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->parser = new LyricParserService();
+        $this->parser = new LyricParserService;
     }
 
     public function test_empty_string_returns_empty_array(): void

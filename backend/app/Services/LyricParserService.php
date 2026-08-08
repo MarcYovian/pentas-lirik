@@ -10,7 +10,6 @@ class LyricParserService
     /**
      * Parse raw lyric text with [LABEL] tags into array of structured chunks.
      *
-     * @param string $rawLyrics
      * @return array<int, array{label: string, content: string, order: int}>
      */
     public function parse(string $rawLyrics): array
@@ -32,9 +31,9 @@ class LyricParserService
             // Check if line is a bracket tag like [VERSE 1] or [CHORUS]
             if (preg_match('/^\[(.*)\]$/', $trimmedLine, $matches)) {
                 // If we already accumulated lines for a previous label, save that chunk
-                if (!empty($currentLines)) {
+                if (! empty($currentLines)) {
                     $content = trim(implode("\n", $currentLines));
-                    if (!empty($content)) {
+                    if (! empty($content)) {
                         $chunks[] = [
                             'label' => $currentLabel ?? '[LYRICS]',
                             'content' => $content,
@@ -53,9 +52,9 @@ class LyricParserService
         }
 
         // Save final accumulated chunk
-        if (!empty($currentLines)) {
+        if (! empty($currentLines)) {
             $content = trim(implode("\n", $currentLines));
-            if (!empty($content)) {
+            if (! empty($content)) {
                 $chunks[] = [
                     'label' => $currentLabel ?? '[LYRICS]',
                     'content' => $content,
@@ -69,10 +68,6 @@ class LyricParserService
 
     /**
      * Parse raw lyrics and sync them with the given Song model in database.
-     *
-     * @param Song $song
-     * @param string $rawLyrics
-     * @return void
      */
     public function parseAndSync(Song $song, string $rawLyrics): void
     {

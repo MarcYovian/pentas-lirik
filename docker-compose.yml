@@ -8,8 +8,8 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      APP_ENV: local
-      APP_DEBUG: 'true'
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
     volumes:
       - ./backend:/var/www/html
       - /var/www/html/vendor

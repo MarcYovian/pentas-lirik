@@ -51,7 +51,12 @@ test.describe('Auth & Dashboard E2E Flows', () => {
     await expect(page.locator('#user-name-display')).toContainText('Operator Live');
   });
 
-  test('Scenario 3: Dashboard 3-Column Navigation & Song Search Filtering', async ({ page }) => {
+  test('Scenario 3: Dashboard 3-Column Navigation & Song Search Filtering', async ({ page, isMobile }) => {
+    if (isMobile) {
+      test.skip();
+      return;
+    }
+
     // Login as operator
     await page.goto('/');
     await page.click('#btn-quick-operator');

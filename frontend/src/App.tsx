@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Zap, ListMusic, Music } from 'lucide-react';
 import { Song, Setlist, SetlistItem, User, LiveState, LyricChunk, WsMessage } from './types';
 import { Navbar } from './components/Navbar';
+
 import { SongLibrary } from './components/SongLibrary';
 import { SetlistRundown } from './components/SetlistRundown';
 import { LiveControlPanel } from './components/LiveControlPanel';
@@ -47,7 +49,11 @@ export default function App() {
 
   const [isConnected, setIsConnected] = useState(false);
 
+  // Mobile View Tab State ('live' | 'setlist' | 'library')
+  const [activeMobileTab, setActiveMobileTab] = useState<'live' | 'setlist' | 'library'>('live');
+
   // Modal States
+
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isUserMgmtModalOpen, setIsUserMgmtModalOpen] = useState(false);
@@ -455,7 +461,7 @@ export default function App() {
   }
 
   return (
-    <div id="app-root-container" className="flex flex-col h-screen overflow-hidden bg-[#0F0F0F]">
+    <div id="app-root-container" className="flex flex-col min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden bg-[#0F0F0F] text-slate-100 no-select">
       {/* Top Header Navbar */}
       <Navbar
         user={user}
@@ -464,58 +470,173 @@ export default function App() {
         onOpenDisplaySettings={() => setIsDisplaySettingsModalOpen(true)}
         isConnected={isConnected}
         liveStateActive={liveState.type === 'lyric' || liveState.type === 'announcement'}
+        activeMobileTab={activeMobileTab}
+        onSelectMobileTab={setActiveMobileTab}
       />
 
-      {/* Main 3-Column Dashboard Layout */}
-      <main id="dashboard-main-layout" className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 p-4 min-h-0 overflow-hidden">
-        {/* Column 1: Song Library (Left - 3 Cols) */}
-        <div className="md:col-span-3 h-full min-h-0">
-          <SongLibrary
-            songs={songs}
-            selectedSongId={selectedSong?.id || null}
-            onSelectSong={(song) => {
-              setSelectedSong(song);
-              setSelectedSetlistItem(null);
-            }}
-            onAddSongToSetlist={handleAddSongToSetlist}
-            onOpenAddModal={() => {
-              setEditingSong(null);
-              setIsSongModalOpen(true);
-            }}
-            onOpenEditModal={(song) => {
-              setEditingSong(song);
-              setIsSongModalOpen(true);
-            }}
-          />
+      {/* Mobile Quick Tab Navigation Bar (Visible only on viewports < md) */}
+      <div id="mobile-tab-navigation" className="flex md:hidden items-center justify-around bg-slate-900/90 backdrop-blur border-b border-slate-800 px-2 py-1.5 shrink-0 z-30 select-none">
+        <button
+          id="mobile-tab-live"
+          onClick={() => setActiveMobileTab('live')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition min-h-[44px] touch-manipulation active:scale-95 ${
+            activeMobileTab === 'live'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+          }`}
+        >
+          <Zap className="w-4 h-4 text-amber-400" />
+          <span>Live Control</span>
+        </button>
+        <button
+          id="mobile-tab-setlist"
+          onClick={() => setActiveMobileTab('setlist')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition min-h-[44px] touch-manipulation active:scale-95 ${
+            activeMobileTab === 'setlist'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+          }`}
+        >
+          <ListMusic className="w-4 h-4 text-indigo-400" />
+          <span>Setlist</span>
+        </button>
+        <button
+          id="mobile-tab-library"
+          onClick={() => setActiveMobileTab('library')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition min-h-[44px] touch-manipulation active:scale-95 ${
+            activeMobileTab === 'library'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+          }`}
+        >
+          <Music className="w-4 h-4 text-emerald-400" />
+          <span>Pustaka Lagu</span>
+        </button>
+      </div>
+
+      {/* Main Dashboard Layout */}
+      <main id="dashboard-main-layout" className="flex-1 p-3 md:p-4 min-h-0 overflow-y-auto md:overflow-hidden">
+        {/* Mobile View: Render active tab */}
+        <div className="block md:hidden h-full pb-20">
+          {activeMobileTab === 'live' && (
+            <LiveControlPanel
+              selectedSong={selectedSong}
+              selectedSetlistItem={selectedSetlistItem}
+              liveState={liveState}
+              onSendLyricChunk={handleSendLyricChunk}
+              onSendAnnouncement={handleSendAnnouncement}
+              onClearScreen={handleClearScreen}
+              onNextChunk={handleNextChunk}
+              currentSetlist={currentSetlist}
+              onSelectSetlistItem={handleSelectSetlistItem}
+              onSelectSongDirect={(song) => {
+                setSelectedSong(song);
+                setSelectedSetlistItem(null);
+              }}
+              allSongs={songs}
+              isModalOpen={isDisplaySettingsModalOpen || isSongModalOpen || isUserMgmtModalOpen}
+            />
+          )}
+
+          {activeMobileTab === 'setlist' && (
+            <SetlistRundown
+              setlists={setlists}
+              currentSetlist={currentSetlist}
+              selectedSetlistItemId={selectedSetlistItem?.id || null}
+              onSelectSetlist={handleSelectSetlist}
+              onCreateNewSetlist={handleCreateNewSetlist}
+              onSaveCurrentSetlist={handleSaveCurrentSetlist}
+              onSelectSetlistItem={(item) => {
+                handleSelectSetlistItem(item);
+                // Optionally switch to live control panel on select
+                setActiveMobileTab('live');
+              }}
+              onRemoveItem={handleRemoveSetlistItem}
+              onMoveItem={handleMoveSetlistItem}
+              onAddAnnouncementToSetlist={handleAddAnnouncementToSetlist}
+            />
+          )}
+
+          {activeMobileTab === 'library' && (
+            <SongLibrary
+              songs={songs}
+              selectedSongId={selectedSong?.id || null}
+              onSelectSong={(song) => {
+                setSelectedSong(song);
+                setSelectedSetlistItem(null);
+                setActiveMobileTab('live');
+              }}
+              onAddSongToSetlist={handleAddSongToSetlist}
+              onOpenAddModal={() => {
+                setEditingSong(null);
+                setIsSongModalOpen(true);
+              }}
+              onOpenEditModal={(song) => {
+                setEditingSong(song);
+                setIsSongModalOpen(true);
+              }}
+            />
+          )}
         </div>
 
-        {/* Column 2: Setlist Rundown (Center - 4 Cols) */}
-        <div className="md:col-span-4 h-full min-h-0">
-          <SetlistRundown
-            setlists={setlists}
-            currentSetlist={currentSetlist}
-            selectedSetlistItemId={selectedSetlistItem?.id || null}
-            onSelectSetlist={handleSelectSetlist}
-            onCreateNewSetlist={handleCreateNewSetlist}
-            onSaveCurrentSetlist={handleSaveCurrentSetlist}
-            onSelectSetlistItem={handleSelectSetlistItem}
-            onRemoveItem={handleRemoveSetlistItem}
-            onMoveItem={handleMoveSetlistItem}
-            onAddAnnouncementToSetlist={handleAddAnnouncementToSetlist}
-          />
-        </div>
+        {/* Desktop View: Render 3-Column Grid */}
+        <div className="hidden md:grid grid-cols-12 gap-4 h-full min-h-0">
+          {/* Column 1: Song Library (Left - 3 Cols) */}
+          <div className="col-span-3 h-full min-h-0">
+            <SongLibrary
+              songs={songs}
+              selectedSongId={selectedSong?.id || null}
+              onSelectSong={(song) => {
+                setSelectedSong(song);
+                setSelectedSetlistItem(null);
+              }}
+              onAddSongToSetlist={handleAddSongToSetlist}
+              onOpenAddModal={() => {
+                setEditingSong(null);
+                setIsSongModalOpen(true);
+              }}
+              onOpenEditModal={(song) => {
+                setEditingSong(song);
+                setIsSongModalOpen(true);
+              }}
+            />
+          </div>
 
-        {/* Column 3: Live Control Panel (Right - 5 Cols) */}
-        <div className="md:col-span-5 h-full min-h-0">
-          <LiveControlPanel
-            selectedSong={selectedSong}
-            selectedSetlistItem={selectedSetlistItem}
-            liveState={liveState}
-            onSendLyricChunk={handleSendLyricChunk}
-            onSendAnnouncement={handleSendAnnouncement}
-            onClearScreen={handleClearScreen}
-            onNextChunk={handleNextChunk}
-          />
+          {/* Column 2: Setlist Rundown (Center - 4 Cols) */}
+          <div className="col-span-4 h-full min-h-0">
+            <SetlistRundown
+              setlists={setlists}
+              currentSetlist={currentSetlist}
+              selectedSetlistItemId={selectedSetlistItem?.id || null}
+              onSelectSetlist={handleSelectSetlist}
+              onCreateNewSetlist={handleCreateNewSetlist}
+              onSaveCurrentSetlist={handleSaveCurrentSetlist}
+              onSelectSetlistItem={handleSelectSetlistItem}
+              onRemoveItem={handleRemoveSetlistItem}
+              onMoveItem={handleMoveSetlistItem}
+              onAddAnnouncementToSetlist={handleAddAnnouncementToSetlist}
+            />
+          </div>
+
+          {/* Column 3: Live Control Panel (Right - 5 Cols) */}
+          <div id="column-live-control-panel" className="col-span-5 h-full min-h-0">
+            <LiveControlPanel
+              selectedSong={selectedSong}
+              selectedSetlistItem={selectedSetlistItem}
+              liveState={liveState}
+              onSendLyricChunk={handleSendLyricChunk}
+              onSendAnnouncement={handleSendAnnouncement}
+              onClearScreen={handleClearScreen}
+              onNextChunk={handleNextChunk}
+              currentSetlist={currentSetlist}
+              onSelectSetlistItem={handleSelectSetlistItem}
+              onSelectSongDirect={(song) => {
+                setSelectedSong(song);
+                setSelectedSetlistItem(null);
+              }}
+              allSongs={songs}
+            />
+          </div>
         </div>
       </main>
 
@@ -540,7 +661,7 @@ export default function App() {
 
       {/* Display Settings Customization Modal */}
       {isDisplaySettingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
           <div className="w-full max-w-6xl my-auto">
             <DisplaySettingsPanel onClose={() => setIsDisplaySettingsModalOpen(false)} />
           </div>
@@ -549,3 +670,4 @@ export default function App() {
     </div>
   );
 }
+

@@ -59,3 +59,23 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #3B82F6;
 }
+
+/* Mobile Safe Area & Touch Optimization Rules */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(1.25rem, env(safe-area-inset-top));
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+

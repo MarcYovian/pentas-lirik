@@ -50,14 +50,14 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-white/70 flex items-center justify-between">
+      <label className="text-xs font-medium text-white/80 flex items-center justify-between">
         <span>{label}</span>
-        <span className="text-[10px] text-white/40 font-mono">{value}</span>
+        <span className="text-[10px] text-blue-300 font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{value}</span>
       </label>
 
       <div className="flex items-center gap-2">
         {/* Color preview circle with hidden input[type=color] */}
-        <div className="relative w-8 h-8 rounded-lg border border-white/20 overflow-hidden shrink-0 shadow-inner flex items-center justify-center cursor-pointer">
+        <div className="relative w-10 h-10 min-w-[40px] rounded-xl border border-white/20 overflow-hidden shrink-0 shadow-inner flex items-center justify-center cursor-pointer touch-manipulation">
           <div
             className="w-full h-full"
             style={{ backgroundColor: value || '#FFFFFF' }}
@@ -76,20 +76,20 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
           value={textInput}
           onChange={handleTextChange}
           placeholder="#FFFFFF or rgba(0,0,0,0.8)"
-          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-white/20 font-mono focus:outline-none focus:border-blue-500 transition"
+          className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-white/20 font-mono focus:outline-none focus:border-blue-500 transition min-h-[44px]"
         />
       </div>
 
       {/* Preset Swatches */}
       {presetSwatches.length > 0 && (
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          <Palette className="w-3 h-3 text-white/30 mr-1" />
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <Palette className="w-3.5 h-3.5 text-white/40 mr-0.5" />
           {presetSwatches.map((swatch, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleSwatchClick(swatch)}
-              className="w-5 h-5 rounded border border-white/20 transition hover:scale-110 focus:outline-none"
+              className="w-7 h-7 min-w-[28px] rounded-lg border border-white/30 transition hover:scale-110 active:scale-95 focus:outline-none touch-manipulation shadow-sm"
               style={{ backgroundColor: swatch }}
               title={`Use ${swatch}`}
             />

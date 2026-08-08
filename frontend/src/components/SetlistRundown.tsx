@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListOrdered, Plus, Save, Trash2, ArrowUp, ArrowDown, Music, MessageSquare } from 'lucide-react';
+import { ListOrdered, Plus, Save, Trash2, ArrowUp, ArrowDown, Music, MessageSquare, Play } from 'lucide-react';
 import { Setlist, SetlistItem, Song } from '../types';
 
 interface SetlistRundownProps {
@@ -27,7 +27,7 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
   onMoveItem,
   onAddAnnouncementToSetlist,
 }) => {
-  const [setlistName, setListName] = useState(currentSetlist?.name || 'New Event Rundown');
+  const [setlistName, setListName] = useState(currentSetlist?.name || 'Setlist Acara Baru');
   const [showAnnouncementInput, setShowAnnouncementInput] = useState(false);
   const [newAnnouncementText, setNewAnnouncementText] = useState('');
 
@@ -63,26 +63,26 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
           <button
             id="btn-new-setlist"
             onClick={onCreateNewSetlist}
-            className="flex items-center gap-1 px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white/80 text-xs font-semibold rounded-lg border border-white/10 transition"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 text-xs font-semibold rounded-xl border border-white/10 transition min-h-[36px] touch-manipulation active:scale-95"
             title="Create Empty Setlist"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>New</span>
+            <span>Baru</span>
           </button>
           <button
             id="btn-save-setlist"
             onClick={handleSave}
-            className="flex items-center gap-1 px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-lg shadow transition"
+            className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl shadow transition min-h-[36px] touch-manipulation active:scale-95"
             title="Save Current Setlist"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>Save</span>
+            <span>Simpan</span>
           </button>
         </div>
       </div>
 
       {/* Setlist Selector & Title Edit */}
-      <div id="setlist-config-panel" className="p-3 border-b border-white/10 bg-[#0F0F0F] space-y-2 shrink-0">
+      <div id="setlist-config-panel" className="p-3 border-b border-white/10 bg-[#0F0F0F] space-y-2.5 shrink-0">
         <div className="flex items-center gap-2">
           <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
             Setlist:
@@ -94,11 +94,11 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
               const target = setlists.find((s) => s.id === parseInt(e.target.value, 10));
               if (target) onSelectSetlist(target);
             }}
-            className="flex-1 bg-white/5 border border-white/10 text-white text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-amber-400/50 transition"
+            className="flex-1 bg-white/5 border border-white/10 text-white text-xs rounded-xl px-3 py-2 outline-none focus:border-amber-400/50 transition min-h-[42px]"
           >
             {setlists.map((s) => (
               <option key={s.id} value={s.id} className="bg-[#121212] text-white">
-                {s.name} ({s.items?.length || 0} items)
+                {s.name} ({s.items?.length || 0} lagu)
               </option>
             ))}
           </select>
@@ -110,17 +110,17 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
             type="text"
             value={setlistName}
             onChange={(e) => setListName(e.target.value)}
-            placeholder="Setlist Title..."
-            className="w-full bg-white/5 border border-white/10 focus:border-amber-400/50 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg outline-none transition"
+            placeholder="Judul Setlist..."
+            className="w-full bg-white/5 border border-white/10 focus:border-amber-400/50 text-white font-semibold text-xs px-3 py-2 rounded-xl outline-none transition min-h-[42px]"
           />
         </div>
       </div>
 
       {/* Items Rundown List */}
-      <div id="setlist-items-container" className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div id="setlist-items-container" className="flex-1 overflow-y-auto p-2.5 space-y-2">
         {!currentSetlist || !currentSetlist.items || currentSetlist.items.length === 0 ? (
           <div className="text-center py-12 px-4 text-white/40 text-xs italic">
-            Setlist is empty. Add songs from the Song Library on the left or add a custom announcement item below.
+            Setlist kosong. Tambahkan lagu dari Pustaka Lagu atau buat pengumuman baru.
           </div>
         ) : (
           currentSetlist.items.map((item, index) => {
@@ -130,15 +130,15 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
                 id={`setlist-item-${item.id}`}
                 key={item.id}
                 onClick={() => onSelectSetlistItem(item)}
-                className={`group relative p-2.5 rounded-lg border cursor-pointer transition flex items-center justify-between ${
+                className={`group relative p-3 rounded-xl border cursor-pointer transition flex items-center justify-between min-h-[56px] touch-manipulation ${
                   isSelected
-                    ? 'bg-amber-500/10 border-amber-500/50 shadow-md ring-1 ring-amber-500/30'
+                    ? 'bg-amber-500/15 border-amber-500/60 shadow-md ring-1 ring-amber-500/30'
                     : 'bg-white/[0.02] hover:bg-white/[0.05] border-white/5'
                 }`}
               >
                 {/* Index & Type Icon */}
-                <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
-                  <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 text-white/70 mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                  <span className="w-6 h-6 rounded-full bg-white/5 border border-white/10 text-white/80 mono text-xs font-bold flex items-center justify-center shrink-0">
                     {index + 1}
                   </span>
                   {item.type === 'song' ? (
@@ -147,17 +147,17 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
                     <MessageSquare className="w-4 h-4 text-amber-400 shrink-0" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <h4 className={`text-xs font-semibold truncate ${isSelected ? 'text-amber-300' : 'text-white/90'}`}>
-                      {item.type === 'song' ? item.song_title : `Announcement: ${item.content}`}
+                    <h4 className={`text-xs sm:text-sm font-semibold truncate ${isSelected ? 'text-amber-300 font-bold' : 'text-white'}`}>
+                      {item.type === 'song' ? item.song_title : `Pengumuman: ${item.content}`}
                     </h4>
                     {item.type === 'song' && item.artist && (
-                      <p className="text-[10px] text-white/40 truncate">{item.artist}</p>
+                      <p className="text-[11px] text-white/40 truncate">{item.artist}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Move & Delete Controls */}
-                <div className="flex items-center gap-1">
+                {/* Touch-Friendly Move & Delete Controls */}
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     id={`btn-move-up-${item.id}`}
                     disabled={index === 0}
@@ -165,10 +165,10 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
                       e.stopPropagation();
                       onMoveItem(index, 'up');
                     }}
-                    className="p-1 hover:bg-white/10 text-white/40 hover:text-white disabled:opacity-20 rounded transition"
-                    title="Move Up"
+                    className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-lg bg-slate-800/80 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-white/70 hover:text-white disabled:opacity-20 flex items-center justify-center transition touch-manipulation active:scale-95"
+                    title="Pindahkan Ke Atas"
                   >
-                    <ArrowUp className="w-3.5 h-3.5" />
+                    <ArrowUp className="w-4 h-4" />
                   </button>
                   <button
                     id={`btn-move-down-${item.id}`}
@@ -177,10 +177,10 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
                       e.stopPropagation();
                       onMoveItem(index, 'down');
                     }}
-                    className="p-1 hover:bg-white/10 text-white/40 hover:text-white disabled:opacity-20 rounded transition"
-                    title="Move Down"
+                    className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-lg bg-slate-800/80 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-white/70 hover:text-white disabled:opacity-20 flex items-center justify-center transition touch-manipulation active:scale-95"
+                    title="Pindahkan Ke Bawah"
                   >
-                    <ArrowDown className="w-3.5 h-3.5" />
+                    <ArrowDown className="w-4 h-4" />
                   </button>
                   <button
                     id={`btn-remove-item-${item.id}`}
@@ -188,10 +188,10 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
                       e.stopPropagation();
                       onRemoveItem(item.id);
                     }}
-                    className="p-1 hover:bg-red-500/20 text-white/40 hover:text-red-400 rounded transition"
-                    title="Remove from Setlist"
+                    className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 flex items-center justify-center transition touch-manipulation active:scale-95"
+                    title="Hapus dari Setlist"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -201,7 +201,7 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
       </div>
 
       {/* Add Announcement Item Footer */}
-      <div id="setlist-footer-actions" className="p-2 border-t border-white/10 bg-[#0F0F0F] shrink-0">
+      <div id="setlist-footer-actions" className="p-3 border-t border-white/10 bg-[#0F0F0F] shrink-0">
         {showAnnouncementInput ? (
           <form onSubmit={handleAddAnnouncement} className="space-y-2">
             <input
@@ -210,23 +210,23 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
               required
               value={newAnnouncementText}
               onChange={(e) => setNewAnnouncementText(e.target.value)}
-              placeholder="e.g. Welcome & Announcements..."
-              className="w-full bg-white/5 border border-white/10 focus:border-amber-400/50 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none"
+              placeholder="misal: Pengumuman Parkir / Sambutan..."
+              className="w-full bg-white/5 border border-white/10 focus:border-amber-400/50 text-white text-xs px-3 py-2 rounded-xl outline-none min-h-[42px]"
             />
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowAnnouncementInput(false)}
-                className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white/80 text-[11px] rounded"
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/80 text-xs rounded-lg"
               >
-                Cancel
+                Batal
               </button>
               <button
                 id="btn-add-announcement-submit"
                 type="submit"
-                className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold rounded"
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow"
               >
-                Add to Rundown
+                Tambah Ke Rundown
               </button>
             </div>
           </form>
@@ -234,10 +234,10 @@ export const SetlistRundown: React.FC<SetlistRundownProps> = ({
           <button
             id="btn-toggle-add-announcement"
             onClick={() => setShowAnnouncementInput(true)}
-            className="w-full py-1.5 bg-white/5 hover:bg-white/10 text-amber-300 text-xs font-semibold rounded-lg border border-white/10 flex items-center justify-center gap-1.5 transition"
+            className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-amber-300 text-xs font-semibold rounded-xl border border-white/10 flex items-center justify-center gap-1.5 transition min-h-[44px] touch-manipulation active:scale-98"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Add Custom Announcement Item</span>
+            <Plus className="w-4 h-4" />
+            <span>+ Tambah Pengumuman Khusus</span>
           </button>
         )}
       </div>

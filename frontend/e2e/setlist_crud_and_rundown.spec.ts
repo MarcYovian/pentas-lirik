@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Setlist CRUD & Rundown Management E2E Tests', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, isMobile }) => {
+    if (isMobile) {
+      test.skip();
+      return;
+    }
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.goto('/');

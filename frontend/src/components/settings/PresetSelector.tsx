@@ -65,9 +65,13 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
 
       {/* Presets List Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-1">
-        {presets.map((preset) => {
-          const isLive = preset.is_active || preset.id === liveSettings.id;
-          const isPreviewing = preset.id === previewSettings.id || preset.id === selectedPresetId;
+        {presets
+          .filter((preset, idx, self) => self.findIndex((p) => p.id === preset.id) === idx)
+          .map((preset) => {
+            const isLive = preset.is_active || preset.id === liveSettings.id;
+            const isPreviewing = preset.id === previewSettings.id || preset.id === selectedPresetId;
+
+
 
           return (
             <div

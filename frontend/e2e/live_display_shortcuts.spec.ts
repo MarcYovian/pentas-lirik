@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Live Display Sync & Keyboard Shortcuts E2E Tests', () => {
-  test('Scenario 1 & 2 & 3: Multi-Tab Sync, Shortcuts & Initial Reload Sync', async ({ context }) => {
+  test('Scenario 1 & 2 & 3: Multi-Tab Sync, Shortcuts & Initial Reload Sync', async ({ context, isMobile }) => {
+    if (isMobile) {
+      test.skip();
+      return;
+    }
     // Tab 1: Operator Panel
     const operatorPage = await context.newPage();
     await operatorPage.goto('/');
@@ -35,7 +39,7 @@ test.describe('Live Display Sync & Keyboard Shortcuts E2E Tests', () => {
     await expect(operatorPage.locator('#active-song-banner')).toContainText('Amazing Grace');
 
     // Click first chunk button in Column 3
-    const firstChunkBtn = operatorPage.locator('#lyric-chunks-list [id^="lyric-chunk-btn-"]').first();
+    const firstChunkBtn = operatorPage.locator('#lyric-chunks-list-desktop [id^="lyric-chunk-btn-"]').first();
     await expect(firstChunkBtn).toBeVisible({ timeout: 5000 });
     await firstChunkBtn.click();
 

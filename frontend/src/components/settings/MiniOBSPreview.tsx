@@ -1,17 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { DisplaySetting } from '../../types/DisplaySetting';
-import { Eye, Sun, Moon, Grid } from 'lucide-react';
+import { Eye, EyeOff, Sun, Moon, Grid } from 'lucide-react';
 
 interface MiniOBSPreviewProps {
   settings: DisplaySetting;
   sampleText?: string;
+  isStickyMobile?: boolean;
 }
 
 export const MiniOBSPreview: React.FC<MiniOBSPreviewProps> = ({
   settings,
   sampleText = 'Haleluya Puji Tuhan Haleluya Puji Tuhan\nDi Tempat Yang Maha Tinggi Maha Tinggi',
+  isStickyMobile = false,
 }) => {
   const [bgMode, setBgMode] = useState<'dark' | 'light' | 'grid'>('dark');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [frameWidth, setFrameWidth] = useState<number>(360);
+
+  // Measure dynamic 16:9 frame width for exact 1080p proportional scaling (1920px base)
+  useEffect(() => {
+    if (!frameRef.current) return;
+    const updateWidth = () => {
+      if (frameRef.current) {
+        setFrameWidth(frameRef.current.clientWidth || 360);
+      }
+    };
+    updateWidth();
+
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setFrameWidth(entry.contentRect.width);
+        }
+      }
+    });
+    observer.observe(frameRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Proportional scale factor relative to 1920px (1080p OBS canvas base)
+  const scale = Math.max(0.1, frameWidth / 1920);
 
   // Compute RGBA background box color with opacity
   const computeBgColor = (colorStr: string, opacityPercent: number): string => {
@@ -48,10 +78,7 @@ export const MiniOBSPreview: React.FC<MiniOBSPreviewProps> = ({
     }
   };
 
-  // Proportional scale factor (Preview canvas vs real 1080p OBS canvas)
-  const scale = 0.45;
-
-  // Build inline styles dynamically for preview
+  // Build inline styles dynamically for preview with exact 1080p proportional scale
   const textStyle: React.CSSProperties = {
     fontSize: `${(settings.font_size * scale).toFixed(1)}px`,
     fontWeight: settings.font_weight as any,
@@ -69,75 +96,99 @@ export const MiniOBSPreview: React.FC<MiniOBSPreviewProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 bg-[#18181b] p-4 rounded-xl border border-white/10 shadow-lg">
-      <div className="flex items-center justify-between">
+    <div
+      className={`flex flex-col gap-2 bg-[#18181b] p-3 md:p-4 rounded-xl border border-white/10 shadow-lg ${
+        isStickyMobile ? 'sticky top-0 z-30 backdrop-blur-md bg-slate-900/95 shadow-2xl border-b border-slate-800 mb-4' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs font-semibold text-white/90">
-          <Eye className="w-4 h-4 text-blue-400" />
-          <span>Mini OBS Live Preview (16:9 Canvas)</span>
+          <Eye className="w-4 h-4 text-blue-400 shrink-0" />
+          <span className="truncate">Mini OBS Live Preview (16:9 1080p Ratio)</span>
         </div>
 
-        {/* Toggleable background test patterns */}
-        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 text-xs">
+        <div className="flex items-center gap-1">
+          {/* Toggle Collapsed state for mobile */}
           <button
             type="button"
-            onClick={() => setBgMode('dark')}
-            className={`px-2 py-1 rounded flex items-center gap-1 transition ${
-              bgMode === 'dark' ? 'bg-blue-600 text-white font-medium' : 'text-white/60 hover:text-white'
-            }`}
-            title="Dark Camera Feed Pattern"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="md:hidden px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium border border-slate-700 flex items-center gap-1 shrink-0"
           >
-            <Moon className="w-3.5 h-3.5" /> Dark Feed
+            {isCollapsed ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            <span>{isCollapsed ? 'Show' : 'Hide'}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setBgMode('light')}
-            className={`px-2 py-1 rounded flex items-center gap-1 transition ${
-              bgMode === 'light' ? 'bg-blue-600 text-white font-medium' : 'text-white/60 hover:text-white'
-            }`}
-            title="Bright Camera Feed Pattern"
-          >
-            <Sun className="w-3.5 h-3.5" /> Bright Feed
-          </button>
-          <button
-            type="button"
-            onClick={() => setBgMode('grid')}
-            className={`px-2 py-1 rounded flex items-center gap-1 transition ${
-              bgMode === 'grid' ? 'bg-blue-600 text-white font-medium' : 'text-white/60 hover:text-white'
-            }`}
-            title="Transparent OBS Checker Grid"
-          >
-            <Grid className="w-3.5 h-3.5" /> Transp. Grid
-          </button>
+
+          {/* Toggleable background test patterns */}
+          {!isCollapsed && (
+            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setBgMode('dark')}
+                className={`p-1 sm:px-2 sm:py-1 rounded flex items-center gap-1 transition ${
+                  bgMode === 'dark' ? 'bg-blue-600 text-white font-medium' : 'text-white/60 hover:text-white'
+                }`}
+                title="Dark Camera Feed Pattern"
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Dark</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBgMode('light')}
+                className={`p-1 sm:px-2 sm:py-1 rounded flex items-center gap-1 transition ${
+                  bgMode === 'light' ? 'bg-blue-600 text-white font-medium' : 'text-white/60 hover:text-white'
+                }`}
+                title="Bright Camera Feed Pattern"
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bright</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBgMode('grid')}
+                className={`p-1 sm:px-2 sm:py-1 rounded flex items-center gap-1 transition ${
+                  bgMode === 'grid' ? 'bg-blue-600 text-white font-medium' : 'text-white/60 hover:text-white'
+                }`}
+                title="Transparent OBS Checker Grid"
+              >
+                <Grid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Simulated 16:9 Frame */}
-      <div
-        className={`relative w-full aspect-video rounded-lg overflow-hidden border border-white/20 flex flex-col justify-end p-6 select-none transition ${
-          bgMode === 'dark'
-            ? 'bg-gradient-to-t from-slate-950 via-slate-900 to-slate-950'
-            : bgMode === 'light'
-            ? 'bg-gradient-to-t from-amber-100 via-sky-100 to-amber-50'
-            : 'bg-[radial-gradient(#ffffff22_1px,transparent_1px)] [background-size:16px_16px] bg-slate-900'
-        }`}
-      >
-        {/* Simulated Stage Lighting Overlay */}
-        {bgMode === 'dark' && (
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 via-purple-900/20 to-red-900/30 pointer-events-none" />
-        )}
+      {!isCollapsed && (
+        <div
+          ref={frameRef}
+          className={`relative w-full aspect-video rounded-lg overflow-hidden border border-white/20 flex flex-col justify-end p-3 sm:p-6 select-none transition ${
+            bgMode === 'dark'
+              ? 'bg-gradient-to-t from-slate-950 via-slate-900 to-slate-950'
+              : bgMode === 'light'
+              ? 'bg-gradient-to-t from-amber-100 via-sky-100 to-amber-50'
+              : 'bg-[radial-gradient(#ffffff22_1px,transparent_1px)] [background-size:16px_16px] bg-slate-900'
+          }`}
+        >
+          {/* Simulated Stage Lighting Overlay */}
+          {bgMode === 'dark' && (
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 via-purple-900/20 to-red-900/30 pointer-events-none" />
+          )}
 
-        {/* Lower Third Lyric Container with Proportional Max Width */}
-        <div className={`w-full ${getPreviewMaxWidthClass(settings.max_width || 'max-w-7xl')} mx-auto flex justify-center z-10 px-2 transition-all duration-200`}>
-          <div id="mini-obs-preview-text" className="max-w-full leading-tight whitespace-pre-line" style={textStyle}>
-            {sampleText}
+          {/* Lower Third Lyric Container with Proportional Max Width */}
+          <div className={`w-full ${getPreviewMaxWidthClass(settings.max_width || 'max-w-7xl')} mx-auto flex justify-center z-10 px-1 sm:px-2 transition-all duration-200`}>
+            <div id="mini-obs-preview-text" className="max-w-full leading-tight whitespace-pre-line" style={textStyle}>
+              {sampleText}
+            </div>
+          </div>
+
+          {/* Watermark Overlay */}
+          <div className="absolute top-2 left-2 bg-black/60 text-[10px] text-white/60 px-2 py-0.5 rounded font-mono pointer-events-none border border-white/10">
+            OBS 1080p Preview ({Math.round(frameWidth)}px)
           </div>
         </div>
-
-        {/* Watermark Overlay */}
-        <div className="absolute top-3 left-3 bg-black/50 text-[10px] text-white/50 px-2 py-0.5 rounded font-mono pointer-events-none">
-          OBS Studio Browser Source Preview (1080p)
-        </div>
-      </div>
+      )}
     </div>
   );
 };

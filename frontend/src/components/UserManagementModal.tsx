@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Users, Trash2 } from 'lucide-react';
+import { X, UserPlus, Users, Trash2, ShieldCheck, UserCheck } from 'lucide-react';
 import { User, UserRole } from '../types';
 
 interface UserManagementModalProps {
@@ -42,7 +42,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
         setUsersList(json.data || []);
       }
     } catch (err) {
-      setError('Failed to load users');
+      setError('Gagal memuat daftar pengguna');
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +69,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
 
       const json = await res.json();
       if (!res.ok) {
-        setError(json.message || 'Failed to create user');
+        setError(json.message || 'Gagal membuat pengguna baru');
         return;
       }
 
@@ -79,12 +79,12 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
       setRole('operator');
       fetchUsers();
     } catch (err) {
-      setError('Network error creating user');
+      setError('Terjadi kesalahan jaringan');
     }
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this user account?')) return;
+    if (!confirm('Apakah Anda yakin ingin menghapus akun pengguna ini?')) return;
     setError(null);
 
     try {
@@ -94,12 +94,12 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.message || 'Failed to delete user');
+        setError(json.message || 'Gagal menghapus pengguna');
         return;
       }
       fetchUsers();
     } catch (err) {
-      setError('Error deleting user');
+      setError('Kesalahan saat menghapus pengguna');
     }
   };
 
@@ -114,42 +114,42 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
         fetchUsers();
       }
     } catch (err) {
-      setError('Error updating user role');
+      setError('Gagal memperbarui role pengguna');
     }
   };
 
   return (
-    <div id="user-mgmt-overlay" className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div id="user-mgmt-modal" className="bg-[#121212] border border-white/10 w-full max-w-3xl rounded-xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+    <div id="user-mgmt-overlay" className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div id="user-mgmt-modal" className="bg-[#121212] border border-white/10 w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto">
         {/* Header */}
-        <div className="px-6 py-4 bg-white/[0.02] border-b border-white/10 flex items-center justify-between">
+        <div className="px-4 md:px-6 py-4 bg-white/[0.02] border-b border-white/10 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-400" />
-            <h2 className="text-base font-bold text-white font-display">User Management (Admin Console)</h2>
+            <h2 className="text-sm md:text-base font-bold text-white font-display">Manajemen Pengguna (Admin)</h2>
           </div>
           <button
             id="close-user-mgmt-btn"
             onClick={onClose}
-            className="text-white/40 hover:text-white transition p-1.5 rounded-lg hover:bg-white/10"
+            className="text-white/40 hover:text-white transition p-2 rounded-xl hover:bg-white/10"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5">
           {error && (
-            <div className="p-3 bg-red-900/50 border border-red-500/50 text-red-200 text-xs rounded-lg">
+            <div className="p-3 bg-red-900/50 border border-red-500/50 text-red-200 text-xs rounded-xl">
               {error}
             </div>
           )}
 
           {/* Create User Form */}
-          <div className="bg-[#0F0F0F] border border-white/10 rounded-xl p-4 space-y-3">
+          <div className="bg-[#0F0F0F] border border-white/10 rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <UserPlus className="w-4 h-4 text-blue-400" />
               <h3 className="font-bold text-xs text-white uppercase tracking-wider font-display">
-                Create New Account
+                Buat Akun Baru
               </h3>
             </div>
 
@@ -160,8 +160,8 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Full Name"
-                className="bg-white/5 border border-white/10 text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-blue-500/50"
+                placeholder="Nama Lengkap"
+                className="bg-white/5 border border-white/10 text-white text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-blue-500/50 min-h-[42px]"
               />
               <input
                 id="new-user-email"
@@ -169,8 +169,8 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address (login)"
-                className="bg-white/5 border border-white/10 text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-blue-500/50"
+                placeholder="Alamat Email (Login)"
+                className="bg-white/5 border border-white/10 text-white text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-blue-500/50 min-h-[42px]"
               />
               <input
                 id="new-user-password"
@@ -178,68 +178,105 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password (min 6 chars)"
-                className="bg-white/5 border border-white/10 text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-blue-500/50"
+                placeholder="Password (min 6 karakter)"
+                className="bg-white/5 border border-white/10 text-white text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-blue-500/50 min-h-[42px]"
               />
               <div className="flex items-center gap-2">
                 <select
                   id="new-user-role"
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="flex-1 bg-white/5 border border-white/10 text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-blue-500/50"
+                  className="flex-1 bg-white/5 border border-white/10 text-white text-xs px-3 py-2.5 rounded-xl outline-none focus:border-blue-500/50 min-h-[42px]"
                 >
-                  <option value="operator" className="bg-[#121212] text-white">Operator Role</option>
-                  <option value="admin" className="bg-[#121212] text-white">Admin Role</option>
+                  <option value="operator" className="bg-[#121212] text-white">Role: Operator</option>
+                  <option value="admin" className="bg-[#121212] text-white">Role: Admin</option>
                 </select>
                 <button
                   id="btn-submit-create-user"
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow transition"
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition min-h-[42px] touch-manipulation active:scale-95 shrink-0"
                 >
-                  Add User
+                  Tambah
                 </button>
               </div>
             </form>
           </div>
 
-          {/* User List Table */}
-          <div className="space-y-2">
+          {/* User List */}
+          <div className="space-y-2.5">
             <h3 className="font-bold text-xs text-white/50 uppercase tracking-wider font-display">
-              Registered Accounts ({usersList.length})
+              Daftar Akun Terdaftar ({usersList.length})
             </h3>
 
-            <div className="bg-[#0F0F0F] border border-white/10 rounded-xl overflow-hidden">
+            {/* Mobile Card List View (< md) */}
+            <div className="block md:hidden space-y-2">
+              {usersList.map((u) => (
+                <div key={u.id} className="p-3 bg-[#0F0F0F] border border-white/10 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-xs text-white">{u.name}</h4>
+                      <p className="text-[11px] text-white/50">{u.email}</p>
+                    </div>
+                    {u.id !== currentUser.id && (
+                      <button
+                        id={`btn-delete-user-mobile-${u.id}`}
+                        onClick={() => handleDeleteUser(u.id)}
+                        className="p-2 bg-red-950/40 text-red-300 hover:text-red-400 rounded-lg transition"
+                        title="Hapus akun pengguna"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <span className="text-[10px] text-white/40 uppercase font-mono">Peran:</span>
+                    <select
+                      value={u.role}
+                      disabled={u.id === currentUser.id}
+                      onChange={(e) => handleUpdateRole(u.id, e.target.value as UserRole)}
+                      className="bg-white/5 border border-white/10 text-white text-xs rounded-lg px-2 py-1 outline-none disabled:opacity-50"
+                    >
+                      <option value="operator" className="bg-[#121212] text-white">OPERATOR</option>
+                      <option value="admin" className="bg-[#121212] text-white">ADMIN</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block bg-[#0F0F0F] border border-white/10 rounded-2xl overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-white/[0.02] border-b border-white/10 text-white/40 font-display">
-                    <th className="p-3">User</th>
-                    <th className="p-3">Email</th>
-                    <th className="p-3">Role</th>
-                    <th className="p-3 text-right">Actions</th>
+                    <th className="p-3.5">User</th>
+                    <th className="p-3.5">Email</th>
+                    <th className="p-3.5">Role</th>
+                    <th className="p-3.5 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
                   {usersList.map((u) => (
                     <tr key={u.id} className="hover:bg-white/[0.02] text-white/80">
-                      <td className="p-3 font-semibold text-white">{u.name}</td>
-                      <td className="p-3 text-white/60">{u.email}</td>
-                      <td className="p-3">
+                      <td className="p-3.5 font-semibold text-white">{u.name}</td>
+                      <td className="p-3.5 text-white/60">{u.email}</td>
+                      <td className="p-3.5">
                         <select
                           value={u.role}
                           disabled={u.id === currentUser.id}
                           onChange={(e) => handleUpdateRole(u.id, e.target.value as UserRole)}
-                          className="bg-white/5 border border-white/10 text-white text-xs rounded px-2 py-1 outline-none disabled:opacity-50"
+                          className="bg-white/5 border border-white/10 text-white text-xs rounded-lg px-2.5 py-1.5 outline-none disabled:opacity-50"
                         >
                           <option value="operator" className="bg-[#121212] text-white">OPERATOR</option>
                           <option value="admin" className="bg-[#121212] text-white">ADMIN</option>
                         </select>
                       </td>
-                      <td className="p-3 text-right">
+                      <td className="p-3.5 text-right">
                         {u.id !== currentUser.id && (
                           <button
                             id={`btn-delete-user-${u.id}`}
                             onClick={() => handleDeleteUser(u.id)}
-                            className="p-1.5 hover:bg-red-500/20 text-red-400 rounded transition"
+                            className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition"
                             title="Delete user account"
                           >
                             <Trash2 className="w-4 h-4" />

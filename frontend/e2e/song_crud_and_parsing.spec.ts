@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Song CRUD & Lyric Parsing E2E Tests', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, isMobile }) => {
+    if (isMobile) {
+      test.skip();
+      return;
+    }
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.goto('/');

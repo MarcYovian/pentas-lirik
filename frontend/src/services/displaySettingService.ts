@@ -4,20 +4,7 @@ import {
   CreateDisplayPresetPayload,
   DEFAULT_DISPLAY_SETTING,
 } from '../types/DisplaySetting';
-
-const getAuthHeaders = (hasBody = true): Record<string, string> => {
-  const token = localStorage.getItem('pentaslirik_token');
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-  };
-  if (hasBody) {
-    headers['Content-Type'] = 'application/json';
-  }
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
+import { apiClient } from '../utils/apiClient';
 
 export const displaySettingService = {
   /**
@@ -25,9 +12,7 @@ export const displaySettingService = {
    */
   async getDisplaySettings(): Promise<DisplaySetting> {
     try {
-      const res = await fetch('/api/v1/display/settings', {
-        headers: getAuthHeaders(false),
-      });
+      const res = await apiClient.fetch('/api/v1/display/settings');
       if (!res.ok) {
         throw new Error(`Failed to fetch display settings (${res.status})`);
       }
@@ -43,9 +28,9 @@ export const displaySettingService = {
    * Update active display setting configuration.
    */
   async updateDisplaySettings(payload: UpdateDisplaySettingPayload): Promise<DisplaySetting> {
-    const res = await fetch('/api/v1/display/settings', {
+    const res = await apiClient.fetch('/api/v1/display/settings', {
       method: 'PUT',
-      headers: getAuthHeaders(true),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -60,9 +45,7 @@ export const displaySettingService = {
    * Fetch all saved display setting presets.
    */
   async getPresets(): Promise<DisplaySetting[]> {
-    const res = await fetch('/api/v1/display/presets', {
-      headers: getAuthHeaders(false),
-    });
+    const res = await apiClient.fetch('/api/v1/display/presets');
     if (!res.ok) {
       throw new Error(`Failed to fetch display presets (${res.status})`);
     }
@@ -74,9 +57,9 @@ export const displaySettingService = {
    * Create a new display setting preset profile.
    */
   async createPreset(payload: CreateDisplayPresetPayload): Promise<DisplaySetting> {
-    const res = await fetch('/api/v1/display/presets', {
+    const res = await apiClient.fetch('/api/v1/display/presets', {
       method: 'POST',
-      headers: getAuthHeaders(true),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -91,9 +74,9 @@ export const displaySettingService = {
    * Update an existing display setting preset profile.
    */
   async updatePreset(id: number, payload: UpdateDisplaySettingPayload): Promise<DisplaySetting> {
-    const res = await fetch(`/api/v1/display/presets/${id}`, {
+    const res = await apiClient.fetch(`/api/v1/display/presets/${id}`, {
       method: 'PUT',
-      headers: getAuthHeaders(true),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -108,9 +91,9 @@ export const displaySettingService = {
    * Atomically activate a display setting preset.
    */
   async activatePreset(id: number): Promise<DisplaySetting> {
-    const res = await fetch(`/api/v1/display/presets/${id}/activate`, {
+    const res = await apiClient.fetch(`/api/v1/display/presets/${id}/activate`, {
       method: 'POST',
-      headers: getAuthHeaders(true),
+      headers: { 'Content-Type': 'application/json' },
     });
     if (!res.ok) {
       const errorJson = await res.json().catch(() => ({}));
@@ -124,9 +107,8 @@ export const displaySettingService = {
    * Delete a saved display setting preset profile.
    */
   async deletePreset(id: number): Promise<void> {
-    const res = await fetch(`/api/v1/display/presets/${id}`, {
+    const res = await apiClient.fetch(`/api/v1/display/presets/${id}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(false),
     });
     if (!res.ok) {
       const errorJson = await res.json().catch(() => ({}));
@@ -134,3 +116,4 @@ export const displaySettingService = {
     }
   },
 };
+

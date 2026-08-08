@@ -157,6 +157,7 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
       <div id="mobile-control-header" className="p-2.5 bg-slate-900/90 border-b border-slate-800 space-y-2 md:hidden shrink-0">
         {/* Setlist Quick Selector Button */}
         <button
+          id="mobile-top-setlist-switcher-pill"
           onClick={() => setIsSetlistDrawerOpen(true)}
           className="w-full flex items-center justify-between p-2.5 bg-slate-800/90 hover:bg-slate-800 border border-slate-700 rounded-xl text-white font-semibold text-xs transition shadow-md min-h-[44px] touch-manipulation active:scale-[0.98]"
         >

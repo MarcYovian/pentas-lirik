@@ -23,7 +23,7 @@ test.describe('Setlist CRUD & Rundown Management E2E Tests', () => {
     await expect(page.locator('#setlist-name-input')).toHaveValue('Ibadah Paskah 2026');
 
     // Verify setlist items container is empty
-    await expect(page.locator('#setlist-items-container')).toContainText('Setlist is empty');
+    await expect(page.locator('#setlist-items-container')).toContainText('Setlist kosong');
   });
 
   test('Scenario 2: Add Songs from Library via + Rundown Button', async ({ page }) => {
@@ -55,10 +55,10 @@ test.describe('Setlist CRUD & Rundown Management E2E Tests', () => {
     await page.click('#btn-add-announcement-submit');
 
     // Verify Announcement Item added
-    await expect(page.locator('#setlist-items-container')).toContainText('Announcement: Warta Jemaat & Persembahan');
+    await expect(page.locator('#setlist-items-container')).toContainText('Pengumuman: Warta Jemaat & Persembahan');
 
     // Test Item Removal before saving
-    const removeBtn = page.locator('#setlist-items-container button[title="Remove from Setlist"]').first();
+    const removeBtn = page.locator('#setlist-items-container button[title="Hapus dari Setlist"]').first();
     await expect(removeBtn).toBeVisible({ timeout: 5000 });
     await removeBtn.click();
 

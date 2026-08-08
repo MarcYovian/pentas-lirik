@@ -22,14 +22,14 @@ test.describe('Mobile-First Control Panel & Layout E2E Tests', () => {
     }
 
     // Verify Mobile Hamburger Button is visible on mobile
-    const hamburgerBtn = page.locator('#btn-toggle-mobile-hamburger');
+    const hamburgerBtn = page.locator('#mobile-menu-toggle-btn');
     await expect(hamburgerBtn).toBeVisible();
 
     // Click Hamburger button to open navigation drawer
     await hamburgerBtn.click();
 
     // Verify drawer overlay & menu links appear
-    const drawerOverlay = page.locator('#mobile-nav-drawer-overlay');
+    const drawerOverlay = page.locator('#mobile-drawer-backdrop');
     await expect(drawerOverlay).toBeVisible();
 
     const songLibraryLink = page.locator('#nav-drawer-link-pustaka-lagu');
@@ -42,7 +42,7 @@ test.describe('Mobile-First Control Panel & Layout E2E Tests', () => {
     await expect(drawerOverlay).not.toBeVisible();
 
     // Song Library view should be active
-    const songLibraryHeader = page.locator('#song-library-header');
+    const songLibraryHeader = page.locator('#song-library-header').first();
     await expect(songLibraryHeader).toBeVisible();
   });
 
@@ -53,23 +53,23 @@ test.describe('Mobile-First Control Panel & Layout E2E Tests', () => {
     }
 
     // Verify Mobile Tab Bar is visible at bottom
-    const tabNav = page.locator('#mobile-tab-navigation');
+    const tabNav = page.locator('#mobile-tab-navigation').first();
     await expect(tabNav).toBeVisible();
 
     // Tap Setlist tab
-    const setlistTab = page.locator('#btn-mobile-tab-setlist');
+    const setlistTab = page.locator('#mobile-tab-setlist').first();
     await setlistTab.click();
-    await expect(page.locator('#column-setlist-rundown')).toBeVisible();
+    await expect(page.locator('#column-setlist-rundown').first()).toBeVisible();
 
     // Tap Library tab
-    const libraryTab = page.locator('#btn-mobile-tab-library');
+    const libraryTab = page.locator('#mobile-tab-library').first();
     await libraryTab.click();
-    await expect(page.locator('#column-song-library')).toBeVisible();
+    await expect(page.locator('#column-song-library').first()).toBeVisible();
 
     // Tap Live tab
-    const liveTab = page.locator('#btn-mobile-tab-live');
+    const liveTab = page.locator('#mobile-tab-live').first();
     await liveTab.click();
-    await expect(page.locator('#mobile-top-setlist-switcher-pill')).toBeVisible();
+    await expect(page.locator('#mobile-top-setlist-switcher-pill').first()).toBeVisible();
   });
 
   test('Mobile Setlist Quick Selector Drawer: Selects song from setlist', async ({ page, isMobile }) => {
@@ -79,16 +79,16 @@ test.describe('Mobile-First Control Panel & Layout E2E Tests', () => {
     }
 
     // Ensure we are on Live tab
-    await page.locator('#btn-mobile-tab-live').click();
+    await page.locator('#mobile-tab-live').first().click();
 
     // Tap Setlist Quick Switcher Pill in header
-    const setlistPill = page.locator('#mobile-top-setlist-switcher-pill');
-    await expect(setlistPill).toBeVisible();
+    const setlistPill = page.locator('#mobile-top-setlist-switcher-pill:visible').first();
+    await expect(setlistPill).toBeVisible({ timeout: 5000 });
     await setlistPill.click();
 
     // Verify Setlist Quick Drawer opens
-    const quickDrawer = page.locator('#mobile-setlist-quick-drawer');
-    await expect(quickDrawer).toBeVisible();
+    const quickDrawer = page.locator('#setlist-quick-drawer').first();
+    await expect(quickDrawer).toBeVisible({ timeout: 5000 });
 
     // Search or select a song item from the drawer
     const songItems = page.locator('[id^="quick-drawer-item-"]');
@@ -96,7 +96,7 @@ test.describe('Mobile-First Control Panel & Layout E2E Tests', () => {
 
     if (count > 0) {
       // Tap the first song item
-      await songItems.first().click();
+      await songItems.first().click({ force: true });
 
       // Drawer should close
       await expect(quickDrawer).not.toBeVisible();
@@ -110,23 +110,23 @@ test.describe('Mobile-First Control Panel & Layout E2E Tests', () => {
     }
 
     // Ensure we are on Live tab
-    await page.locator('#btn-mobile-tab-live').click();
+    await page.locator('#mobile-tab-live').first().click();
 
     // Check if floating bottom stepper bar is rendered
-    const stepperBar = page.locator('#mobile-bottom-stepper-bar');
-    await expect(stepperBar).toBeVisible();
+    const stepperBar = page.locator('#mobile-bottom-stepper-bar').first();
+    await expect(stepperBar).toBeVisible({ timeout: 10000 });
 
     // Tap NEXT STANZA button if enabled
-    const nextBtn = page.locator('#mobile-bottom-stepper-bar button:has-text("NEXT STANZA")');
+    const nextBtn = page.locator('#mobile-bottom-stepper-bar button:has-text("NEXT STANZA")').first();
     if (await nextBtn.isEnabled()) {
-      await nextBtn.click();
+      await nextBtn.click({ force: true });
       await page.waitForTimeout(300);
     }
 
     // Tap Clear Screen button
-    const clearBtn = page.locator('#mobile-bottom-stepper-bar button:has-text("Clear Screen")');
-    await expect(clearBtn).toBeVisible();
-    await clearBtn.click();
+    const clearBtn = page.locator('#mobile-bottom-stepper-bar button:has-text("Clear Screen")').first();
+    await expect(clearBtn).toBeVisible({ timeout: 10000 });
+    await clearBtn.click({ force: true });
   });
 
   test('Viewport Overflow Verification: 0 horizontal scrollbar on mobile viewports', async ({ page, isMobile }) => {

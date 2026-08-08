@@ -80,19 +80,19 @@ test.describe('Song CRUD & Lyric Parsing E2E Tests', () => {
   test('Scenario 3: Switching Active Songs in Live Control Panel', async ({ page }) => {
     // Search 10,000 Reasons
     await page.fill('#song-search-input', '10,000');
-    const card2 = page.locator('#song-list-container > div', { hasText: '10,000 Reasons' });
-    await card2.click();
+    const card2 = page.locator('[id^="song-card-"]', { hasText: '10,000 Reasons' }).first();
+    await card2.locator('h3').click();
 
     // Verify Live Control Panel updates active song banner
-    await expect(page.locator('#active-song-banner')).toContainText('10,000 Reasons');
-    await expect(page.locator('#lyric-chunks-list')).toContainText('[CHORUS]');
+    await expect(page.locator('#active-song-banner').first()).toContainText('10,000 Reasons');
+    await expect(page.locator('#lyric-chunks-list-desktop').first()).toContainText('[CHORUS]');
 
     // Search What A Beautiful Name
     await page.fill('#song-search-input', 'Beautiful');
-    const card3 = page.locator('#song-list-container > div', { hasText: 'What A Beautiful Name' });
-    await card3.click();
+    const card3 = page.locator('[id^="song-card-"]', { hasText: 'What A Beautiful Name' }).first();
+    await card3.locator('h3').click();
 
     // Verify Live Control Panel dynamically switches
-    await expect(page.locator('#active-song-banner')).toContainText('What A Beautiful Name');
+    await expect(page.locator('#active-song-banner').first()).toContainText('What A Beautiful Name');
   });
 });

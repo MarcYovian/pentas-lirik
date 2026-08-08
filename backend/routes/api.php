@@ -21,6 +21,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::post('/auth/logout-all', [AuthController::class, 'logoutAll']);
         Route::get('/auth/me', [AuthController::class, 'me']);
 
         // OBS Display Customization Management API

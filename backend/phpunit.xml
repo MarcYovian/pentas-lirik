@@ -28,6 +28,7 @@
         <env name="DB_DATABASE" value="testing" force="true"/>
         <env name="DB_USERNAME" value="sail" force="true"/>
         <env name="DB_PASSWORD" value="password" force="true"/>
+
         <env name="MAIL_MAILER" value="array" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>

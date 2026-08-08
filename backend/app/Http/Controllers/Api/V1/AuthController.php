@@ -29,10 +29,9 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Revoke previous tokens if any (optional clean up)
-        $user->tokens()->delete();
-
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // Generate token with device name tagging without revoking other active device tokens
+        $deviceName = $request->input('device_name', $request->header('User-Agent', 'Unknown Device'));
+        $token = $user->createToken($deviceName)->plainTextToken;
 
         return response()->json([
             'data' => [
@@ -48,14 +47,26 @@ class AuthController extends Controller
     }
 
     /**
-     * Log out the current user by deleting their access token.
+     * Log out the current user device by deleting its specific access token.
      */
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Successfully logged out.',
+            'message' => 'Successfully logged out of this device.',
+        ]);
+    }
+
+    /**
+     * Log out the authenticated user from all active devices by deleting all access tokens.
+     */
+    public function logoutAll(Request $request): JsonResponse
+    {
+        $request->user()->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Successfully logged out of all devices.',
         ]);
     }
 

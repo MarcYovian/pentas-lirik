@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Users, Trash2, ShieldCheck, UserCheck } from 'lucide-react';
+import { X, UserPlus, Users, Trash2 } from 'lucide-react';
 import { User, UserRole } from '../types';
+import { apiClient } from '../utils/apiClient';
 
 interface UserManagementModalProps {
   isOpen: boolean;
@@ -23,20 +24,10 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('operator');
 
-  const getAuthHeaders = (): HeadersInit => {
-    const token = localStorage.getItem('pentaslirik_token');
-    return {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-  };
-
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/v1/users', {
-        headers: getAuthHeaders(),
-      });
+      const res = await apiClient.fetch('/api/v1/users');
       const json = await res.json();
       if (res.ok) {
         setUsersList(json.data || []);
@@ -61,9 +52,9 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/users', {
+      const res = await apiClient.fetch('/api/v1/users', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role }),
       });
 
@@ -88,9 +79,8 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     setError(null);
 
     try {
-      const res = await fetch(`/api/v1/users/${id}`, {
+      const res = await apiClient.fetch(`/api/v1/users/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -105,9 +95,9 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
 
   const handleUpdateRole = async (id: number, newRole: UserRole) => {
     try {
-      const res = await fetch(`/api/v1/users/${id}`, {
+      const res = await apiClient.fetch(`/api/v1/users/${id}`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       });
       if (res.ok) {
@@ -117,6 +107,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
       setError('Gagal memperbarui role pengguna');
     }
   };
+
 
   return (
     <div id="user-mgmt-overlay" className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">

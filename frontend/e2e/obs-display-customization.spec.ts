@@ -18,10 +18,10 @@ test.describe('OBS Display Customization & Preset Profiles E2E Tests', () => {
 
   test('E2E-01: Open Display Settings Modal & Font Size Slider', async ({ page }) => {
     await page.click('button:has-text("Display Style")');
-    await expect(page.locator('text=OBS Display Layer Customization')).toBeVisible();
+    await expect(page.locator('text=OBS Display Customization')).toBeVisible();
 
-    // Verify Font Size number input exists
-    const fontSizeInput = page.locator('input[type="number"]');
+    // Verify Font Size range input exists
+    const fontSizeInput = page.locator('input[type="range"]').first();
     await expect(fontSizeInput).toBeVisible();
 
     // Change font size to 60px
@@ -31,7 +31,7 @@ test.describe('OBS Display Customization & Preset Profiles E2E Tests', () => {
 
   test('E2E-02: Mini OBS Preview Canvas Proportional Scale', async ({ page }) => {
     await page.click('button:has-text("Display Style")');
-    const previewCanvas = page.locator('text=Mini OBS Live Preview (16:9 Canvas)');
+    const previewCanvas = page.locator('text=Mini OBS Live Preview (16:9 1080p Ratio)');
     await expect(previewCanvas).toBeVisible();
 
     // Verify lyric sample text inside preview canvas
@@ -94,7 +94,7 @@ test.describe('OBS Display Customization & Preset Profiles E2E Tests', () => {
     await page.click('button:has-text("Display Style")');
 
     // Verify Sandbox Previewing Header Badge
-    await expect(page.locator('text=Sandbox Previewing:')).toBeVisible();
+    await expect(page.locator('text=Preview:')).toBeVisible();
 
     // Click inspecting preset card
     const presetCard = page.locator('button:has-text("Inspect Preview")').first();

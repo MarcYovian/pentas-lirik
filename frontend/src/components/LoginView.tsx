@@ -4,9 +4,10 @@ import { User } from '../types';
 
 interface LoginViewProps {
   onLoginSuccess: (user: User, token: string) => void;
+  authError?: string | null;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, authError }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -18,10 +19,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
 
     try {
+      const deviceName = typeof window !== 'undefined' ? window.navigator.userAgent : 'Web Browser';
       const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, device_name: deviceName }),
       });
 
       const json = await res.json();
@@ -46,6 +48,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     setError(null);
   };
 
+  const displayMessage = error || authError;
+
   return (
     <div id="login-container" className="min-h-screen bg-[#0F0F0F] flex items-center justify-center p-4">
       <div id="login-card" className="bg-[#121212] border border-white/10 w-full max-w-md rounded-2xl shadow-2xl p-8 space-y-6">
@@ -60,11 +64,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </p>
         </div>
 
-        {error && (
+        {displayMessage && (
           <div id="login-error-alert" className="p-3 bg-red-900/50 border border-red-500/50 text-red-200 text-xs rounded-lg text-center font-medium">
-            {error}
+            {displayMessage}
           </div>
         )}
+
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">

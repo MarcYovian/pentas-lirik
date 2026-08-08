@@ -11,6 +11,7 @@ import { UserManagementModal } from './components/UserManagementModal';
 import { DisplaySettingsPanel } from './components/settings/DisplaySettingsPanel';
 import { OBSDisplay } from './components/OBSDisplay';
 import { LoginView } from './components/LoginView';
+import { apiClient, AUTH_UNAUTHORIZED_EVENT } from './utils/apiClient';
 
 export default function App() {
   // Check if current URL is the OBS Browser Source display route
@@ -31,6 +32,26 @@ export default function App() {
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('pentaslirik_token') || null;
   });
+
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Global 401 Unauthorized Event Listener for Session Expiration Auto-Redirect
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setToken(null);
+      setAuthError('Session expired or invalidated. Please sign in again.');
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+      }
+    };
+  }, []);
 
   // App Data States
   const [songs, setSongs] = useState<Song[]>([]);
@@ -53,35 +74,18 @@ export default function App() {
   const [activeMobileTab, setActiveMobileTab] = useState<'live' | 'setlist' | 'library'>('live');
 
   // Modal States
-
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isUserMgmtModalOpen, setIsUserMgmtModalOpen] = useState(false);
   const [isDisplaySettingsModalOpen, setIsDisplaySettingsModalOpen] = useState(false);
 
-  // Helper to construct authenticated API headers
-  const getAuthHeaders = (hasBody = true) => {
-    const savedToken = localStorage.getItem('pentaslirik_token') || token;
-    const headers: Record<string, string> = {
-      'Accept': 'application/json',
-    };
-    if (hasBody) {
-      headers['Content-Type'] = 'application/json';
-    }
-    if (savedToken) {
-      headers['Authorization'] = `Bearer ${savedToken}`;
-    }
-    return headers;
-  };
-
   // Fetch initial data
   const loadData = useCallback(async () => {
     try {
-      const headers = getAuthHeaders(false);
       const [songsRes, setlistsRes, liveStateRes] = await Promise.all([
-        fetch('/api/v1/songs', { headers }).then((r) => r.json()),
-        fetch('/api/v1/setlists', { headers }).then((r) => r.json()),
-        fetch('/api/v1/live/state', { headers }).then((r) => r.json()),
+        apiClient.fetch('/api/v1/songs').then((r) => r.json()),
+        apiClient.fetch('/api/v1/setlists').then((r) => r.json()),
+        apiClient.fetch('/api/v1/live/state').then((r) => r.json()),
       ]);
 
       if (songsRes.data) setSongs(songsRes.data);
@@ -98,7 +102,8 @@ export default function App() {
     } catch (err) {
       console.error('Failed to load application data:', err);
     }
-  }, [token]);
+  }, []);
+
 
   useEffect(() => {
     if (user) {
@@ -172,13 +177,18 @@ export default function App() {
   const handleLoginSuccess = (loggedInUser: User, authToken: string) => {
     setUser(loggedInUser);
     setToken(authToken);
+    setAuthError(null);
     localStorage.setItem('pentaslirik_user', JSON.stringify(loggedInUser));
     localStorage.setItem('pentaslirik_token', authToken);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await apiClient.fetch('/api/v1/auth/logout', { method: 'POST' });
+    } catch (e) {}
     setUser(null);
     setToken(null);
+    setAuthError(null);
     localStorage.removeItem('pentaslirik_user');
     localStorage.removeItem('pentaslirik_token');
   };
@@ -191,9 +201,9 @@ export default function App() {
         lyrics: songData.lyrics_raw,
       };
       if (editingSong) {
-        const res = await fetch(`/api/v1/songs/${editingSong.id}`, {
+        const res = await apiClient.fetch(`/api/v1/songs/${editingSong.id}`, {
           method: 'PUT',
-          headers: getAuthHeaders(true),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         const json = await res.json();
@@ -204,9 +214,9 @@ export default function App() {
           }
         }
       } else {
-        const res = await fetch('/api/v1/songs', {
+        const res = await apiClient.fetch('/api/v1/songs', {
           method: 'POST',
-          headers: getAuthHeaders(true),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         const json = await res.json();
@@ -221,9 +231,8 @@ export default function App() {
 
   const handleDeleteSong = async (songId: number) => {
     try {
-      const res = await fetch(`/api/v1/songs/${songId}`, {
+      const res = await apiClient.fetch(`/api/v1/songs/${songId}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(false),
       });
       if (res.ok) {
         setSongs((prev) => prev.filter((s) => s.id !== songId));
@@ -259,9 +268,9 @@ export default function App() {
     if (!currentSetlist) return;
 
     try {
-      const res = await fetch(`/api/v1/setlists/${currentSetlist.id}`, {
+      const res = await apiClient.fetch(`/api/v1/setlists/${currentSetlist.id}`, {
         method: 'PUT',
-        headers: getAuthHeaders(true),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, items }),
       });
       const json = await res.json();
@@ -270,9 +279,9 @@ export default function App() {
         setCurrentSetlist(json.data);
       } else {
         // Fallback for new unsaved setlists
-        const createRes = await fetch('/api/v1/setlists', {
+        const createRes = await apiClient.fetch('/api/v1/setlists', {
           method: 'POST',
-          headers: getAuthHeaders(true),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, items }),
         });
         const createJson = await createRes.json();
@@ -392,9 +401,9 @@ export default function App() {
   // Live Control Actions
   const handleSendLyricChunk = async (chunk: LyricChunk, songTitle: string, songId: number) => {
     try {
-      const res = await fetch('/api/v1/live/send-lyric', {
+      const res = await apiClient.fetch('/api/v1/live/send-lyric', {
         method: 'POST',
-        headers: getAuthHeaders(true),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'lyric',
           text: chunk.content,
@@ -417,9 +426,9 @@ export default function App() {
 
   const handleSendAnnouncement = async (content: string) => {
     try {
-      const res = await fetch('/api/v1/live/send-lyric', {
+      const res = await apiClient.fetch('/api/v1/live/send-lyric', {
         method: 'POST',
-        headers: getAuthHeaders(true),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'announcement',
           text: content,
@@ -440,9 +449,8 @@ export default function App() {
 
   const handleClearScreen = async () => {
     try {
-      await fetch('/api/v1/live/clear', {
+      await apiClient.fetch('/api/v1/live/clear', {
         method: 'POST',
-        headers: getAuthHeaders(false),
       });
       setLiveState({
         type: 'clear',
@@ -483,8 +491,9 @@ export default function App() {
 
   // Render Login View if not authenticated
   if (!user) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+    return <LoginView onLoginSuccess={handleLoginSuccess} authError={authError} />;
   }
+
 
   return (
     <div id="app-root-container" className="flex flex-col min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden bg-[#0F0F0F] text-slate-100 no-select">

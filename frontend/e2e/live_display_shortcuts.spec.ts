@@ -8,6 +8,7 @@ test.describe('Live Display Sync & Keyboard Shortcuts E2E Tests', () => {
     }
     // Tab 1: Operator Panel
     const operatorPage = await context.newPage();
+    await operatorPage.setViewportSize({ width: 1280, height: 720 });
     await operatorPage.goto('/');
 
     // Clear session & login as operator
@@ -24,6 +25,7 @@ test.describe('Live Display Sync & Keyboard Shortcuts E2E Tests', () => {
 
     // Tab 2: OBS Display Layer Page
     const displayPage = await context.newPage();
+    await displayPage.setViewportSize({ width: 1280, height: 720 });
     await displayPage.goto('/display');
 
     // Verify initial OBS display layer is empty/transparent
@@ -33,18 +35,18 @@ test.describe('Live Display Sync & Keyboard Shortcuts E2E Tests', () => {
     await operatorPage.bringToFront();
 
     // Select Amazing Grace in Column 1 (Song Library)
-    const graceCard = operatorPage.locator('#song-list-container > div', { hasText: 'Amazing Grace' });
+    const graceCard = operatorPage.locator('[id^="song-card-"]', { hasText: 'Amazing Grace' }).first();
     await expect(graceCard).toBeVisible();
-    await graceCard.click();
-    await expect(operatorPage.locator('#active-song-banner')).toContainText('Amazing Grace');
+    await graceCard.locator('h3').click();
+    await expect(operatorPage.locator('#active-song-banner').first()).toContainText('Amazing Grace');
 
     // Click first chunk button in Column 3
-    const firstChunkBtn = operatorPage.locator('#lyric-chunks-list-desktop [id^="lyric-chunk-btn-"]').first();
+    const firstChunkBtn = operatorPage.locator('#column-live-control-panel [id^="lyric-chunk-btn-"]').first();
     await expect(firstChunkBtn).toBeVisible({ timeout: 5000 });
     await firstChunkBtn.click();
 
     // Verify Operator Tab shows LIVE ON AIR highlight
-    await expect(operatorPage.locator('#live-status-action-bar')).toContainText('LIVE ON AIR');
+    await expect(operatorPage.locator('#live-status-action-bar').first()).toContainText('LIVE ON AIR');
 
     // Verify OBS Display Tab renders live text in lower-third
     await displayPage.bringToFront();
@@ -66,7 +68,7 @@ test.describe('Live Display Sync & Keyboard Shortcuts E2E Tests', () => {
     await operatorPage.keyboard.press('Escape');
 
     // Verify Operator Tab shows CLEAR
-    await expect(operatorPage.locator('#live-status-action-bar')).toContainText('CLEAR');
+    await expect(operatorPage.locator('#live-status-action-bar').first()).toContainText('CLEAR');
 
     // Verify OBS Display Tab is clear
     await displayPage.bringToFront();

@@ -30,9 +30,13 @@ export const SetlistQuickDrawer: React.FC<SetlistQuickDrawerProps> = ({
 
   const items = currentSetlist?.items || [];
   const filteredItems = items.filter((item) => {
-    const titleMatch = item.song?.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    const artistMatch = item.song?.artist?.toLowerCase().includes(searchQuery.toLowerCase());
-    const contentMatch = item.content?.toLowerCase().includes(searchQuery.toLowerCase());
+    const songTitle = item.song_title || item.song?.title || '';
+    const artist = item.artist || item.song?.artist || '';
+    const content = item.content || '';
+
+    const titleMatch = songTitle.toLowerCase().includes(searchQuery.toLowerCase());
+    const artistMatch = artist.toLowerCase().includes(searchQuery.toLowerCase());
+    const contentMatch = content.toLowerCase().includes(searchQuery.toLowerCase());
     return titleMatch || artistMatch || contentMatch;
   });
 
@@ -69,7 +73,7 @@ export const SetlistQuickDrawer: React.FC<SetlistQuickDrawerProps> = ({
             <ListMusic className="w-5 h-5 text-indigo-400" />
             <div>
               <h3 className="font-bold text-base text-white font-display">
-                {currentSetlist ? currentSetlist.title : 'Setlist Rundown'}
+                {currentSetlist ? (currentSetlist.name || currentSetlist.title) : 'Setlist Rundown'}
               </h3>
               <p className="text-xs text-slate-400">Pilih lagu untuk ditayangkan di Mobile Control</p>
             </div>
@@ -110,8 +114,13 @@ export const SetlistQuickDrawer: React.FC<SetlistQuickDrawerProps> = ({
                 item.id === selectedSetlistItemId ||
                 (item.song_id && item.song_id === selectedSongId);
 
+              const songTitle = item.song_title || item.song?.title || 'Lagu Tanpa Judul';
+              const artistName = item.artist || item.song?.artist || 'Artis/Pencipta';
+              const keySig = item.song?.key_signature;
+
               return (
                 <button
+                  id={`quick-drawer-item-${item.id}`}
                   key={item.id}
                   onClick={() => {
                     onSelectSetlistItem(item);
@@ -139,18 +148,18 @@ export const SetlistQuickDrawer: React.FC<SetlistQuickDrawerProps> = ({
                         <span className="font-bold text-sm text-white truncate">
                           {item.type === 'announcement'
                             ? `Pengumuman: ${item.content}`
-                            : item.song?.title || 'Lagu Tanpa Judul'}
+                            : songTitle}
                         </span>
-                        {item.song?.key_signature && (
+                        {keySig && (
                           <span className="px-1.5 py-0.5 text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded mono shrink-0">
-                            Key: {item.song.key_signature}
+                            Key: {keySig}
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-slate-400 truncate">
                         {item.type === 'announcement'
                           ? 'Item Teks Pengumuman'
-                          : item.song?.artist || 'Artis/Pencipta'}
+                          : artistName}
                       </p>
                     </div>
                   </div>

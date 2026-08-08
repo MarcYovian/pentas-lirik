@@ -85,17 +85,20 @@ export default function App() {
       ]);
 
       if (songsRes.data) setSongs(songsRes.data);
-      if (setlistsRes.data) {
+      if (setlistsRes.data && Array.isArray(setlistsRes.data)) {
         setSetlists(setlistsRes.data);
-        if (setlistsRes.data.length > 0 && !currentSetlist) {
-          setCurrentSetlist(setlistsRes.data[0]);
-        }
+        setCurrentSetlist((prev) => {
+          if (setlistsRes.data.length === 0) return null;
+          if (!prev) return setlistsRes.data[0];
+          const matched = setlistsRes.data.find((s: Setlist) => s.id === prev.id);
+          return matched || setlistsRes.data[0];
+        });
       }
       if (liveStateRes.data) setLiveState(liveStateRes.data);
     } catch (err) {
       console.error('Failed to load application data:', err);
     }
-  }, [currentSetlist, token]);
+  }, [token]);
 
   useEffect(() => {
     if (user) {
@@ -283,8 +286,22 @@ export default function App() {
     }
   };
 
-  const handleAddSongToSetlist = (song: Song) => {
-    if (!currentSetlist) return;
+  const handleAddSongToSetlist = async (song: Song) => {
+    let targetSetlist = currentSetlist;
+
+    // Fallback: pick existing setlist if currentSetlist is null
+    if (!targetSetlist) {
+      if (setlists.length > 0) {
+        targetSetlist = setlists[0];
+      } else {
+        targetSetlist = {
+          id: Date.now(),
+          name: `New Event Rundown (${new Date().toLocaleDateString()})`,
+          items: [],
+        };
+        setSetlists([targetSetlist]);
+      }
+    }
 
     const newItem: SetlistItem = {
       id: Date.now(),
@@ -292,16 +309,25 @@ export default function App() {
       song_id: song.id,
       song_title: song.title,
       artist: song.artist,
-      order: currentSetlist.items.length + 1,
+      order: (targetSetlist.items?.length || 0) + 1,
     };
 
     const updatedSetlist: Setlist = {
-      ...currentSetlist,
-      items: [...currentSetlist.items, newItem],
+      ...targetSetlist,
+      items: [...(targetSetlist.items || []), newItem],
     };
 
     setCurrentSetlist(updatedSetlist);
-    setSetlists((prev) => prev.map((s) => (s.id === updatedSetlist.id ? updatedSetlist : s)));
+    setSetlists((prev) => {
+      const exists = prev.some((s) => s.id === updatedSetlist.id);
+      if (exists) {
+        return prev.map((s) => (s.id === updatedSetlist.id ? updatedSetlist : s));
+      }
+      return [updatedSetlist, ...prev];
+    });
+
+    // Auto-save setlist to API backend
+    await handleSaveCurrentSetlist(updatedSetlist.name, updatedSetlist.items);
   };
 
   const handleAddAnnouncementToSetlist = (content: string) => {

@@ -13,6 +13,14 @@ import { DisplaySettingsPanel } from './components/settings/DisplaySettingsPanel
 import { OBSDisplay } from './components/OBSDisplay';
 import { LoginView } from './components/LoginView';
 import { apiClient, AUTH_UNAUTHORIZED_EVENT } from './utils/apiClient';
+import {
+  saveSongsToOfflineCache,
+  getSongsFromOfflineCache,
+  saveSetlistsToOfflineCache,
+  getSetlistsFromOfflineCache,
+  saveLastLiveStateToOfflineCache,
+  getLastLiveStateFromOfflineCache,
+} from './utils/offlineDb';
 
 export default function App() {
   // Check if current URL is the OBS Browser Source display route
@@ -70,6 +78,7 @@ export default function App() {
   });
 
   const [isConnected, setIsConnected] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   // Mobile View Tab State ('live' | 'setlist' | 'library')
   const [activeMobileTab, setActiveMobileTab] = useState<'live' | 'setlist' | 'library'>('live');
@@ -81,7 +90,7 @@ export default function App() {
   const [isUserMgmtModalOpen, setIsUserMgmtModalOpen] = useState(false);
   const [isDisplaySettingsModalOpen, setIsDisplaySettingsModalOpen] = useState(false);
 
-  // Fetch initial data
+  // Fetch initial data with IndexedDB caching & fallback
   const loadData = useCallback(async () => {
     try {
       const [songsRes, setlistsRes, liveStateRes] = await Promise.all([
@@ -90,21 +99,79 @@ export default function App() {
         apiClient.fetch('/api/v1/live/state').then((r) => r.json()),
       ]);
 
-      if (songsRes.data) setSongs(songsRes.data);
+      if (songsRes.data) {
+        setSongs(songsRes.data);
+        saveSongsToOfflineCache(songsRes.data);
+      }
       if (setlistsRes.data && Array.isArray(setlistsRes.data)) {
         setSetlists(setlistsRes.data);
+        saveSetlistsToOfflineCache(setlistsRes.data);
         setCurrentSetlist((prev) => {
           if (setlistsRes.data.length === 0) return null;
           if (!prev) return setlistsRes.data[0];
+          if (typeof prev.id === 'number' && prev.id > 1000000000) {
+            return prev;
+          }
           const matched = setlistsRes.data.find((s: Setlist) => s.id === prev.id);
           return matched || setlistsRes.data[0];
         });
       }
-      if (liveStateRes.data) setLiveState(liveStateRes.data);
+      if (liveStateRes.data) {
+        setLiveState(liveStateRes.data);
+        saveLastLiveStateToOfflineCache(liveStateRes.data);
+      }
+      setIsOffline(false);
     } catch (err) {
-      console.error('Failed to load application data:', err);
+      console.warn('Network request failed, attempting IndexedDB offline fallback:', err);
+      setIsOffline(true);
+
+      // Offline Fallback from IndexedDB
+      try {
+        const [cachedSongs, cachedSetlists, cachedLiveState] = await Promise.all([
+          getSongsFromOfflineCache(),
+          getSetlistsFromOfflineCache(),
+          getLastLiveStateFromOfflineCache(),
+        ]);
+
+        if (cachedSongs.length > 0) setSongs(cachedSongs);
+        if (cachedSetlists.length > 0) {
+          setSetlists(cachedSetlists);
+          setCurrentSetlist((prev) => {
+            if (!prev) return cachedSetlists[0];
+            const matched = cachedSetlists.find((s) => s.id === prev.id);
+            return matched || cachedSetlists[0];
+          });
+        }
+        if (cachedLiveState) setLiveState(cachedLiveState);
+      } catch (dbErr) {
+        console.error('Failed to load offline cache from IndexedDB:', dbErr);
+      }
     }
   }, []);
+
+  // Listen to browser Online / Offline Network Events
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('[Network] Connection restored: Online');
+      setIsOffline(false);
+      if (user) {
+        loadData();
+      }
+    };
+
+    const handleOffline = () => {
+      console.log('[Network] Connection lost: Offline Mode Active');
+      setIsOffline(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [user, loadData]);
 
 
   useEffect(() => {
@@ -266,21 +333,13 @@ export default function App() {
     setSelectedSetlistItem(null);
   };
 
-  const handleSaveCurrentSetlist = async (name: string, items: SetlistItem[]) => {
-    if (!currentSetlist) return;
+  const handleSaveCurrentSetlist = async (name: string, items: SetlistItem[], setlistId?: number) => {
+    const targetId = setlistId ?? currentSetlist?.id;
+    if (!targetId && !name) return;
 
     try {
-      const res = await apiClient.fetch(`/api/v1/setlists/${currentSetlist.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, items }),
-      });
-      const json = await res.json();
-      if (res.ok && json.data) {
-        setSetlists((prev) => prev.map((s) => (s.id === json.data.id ? json.data : s)));
-        setCurrentSetlist(json.data);
-      } else {
-        // Fallback for new unsaved setlists
+      const isNewSetlist = !targetId || targetId > 1000000000;
+      if (isNewSetlist) {
         const createRes = await apiClient.fetch('/api/v1/setlists', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -288,8 +347,19 @@ export default function App() {
         });
         const createJson = await createRes.json();
         if (createRes.ok && createJson.data) {
-          setSetlists((prev) => [createJson.data, ...prev.filter((s) => s.id !== currentSetlist.id)]);
+          setSetlists((prev) => [createJson.data, ...prev.filter((s) => s.id !== targetId)]);
           setCurrentSetlist(createJson.data);
+        }
+      } else {
+        const res = await apiClient.fetch(`/api/v1/setlists/${targetId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, items }),
+        });
+        const json = await res.json();
+        if (res.ok && json.data) {
+          setSetlists((prev) => prev.map((s) => (s.id === json.data.id ? json.data : s)));
+          setCurrentSetlist(json.data);
         }
       }
     } catch (err) {
@@ -297,7 +367,7 @@ export default function App() {
     }
   };
 
-  const handleAddSongToSetlist = async (song: Song) => {
+  const handleAddSongToSetlist = (song: Song) => {
     let targetSetlist = currentSetlist;
 
     // Fallback: pick existing setlist if currentSetlist is null
@@ -336,9 +406,6 @@ export default function App() {
       }
       return [updatedSetlist, ...prev];
     });
-
-    // Auto-save setlist to API backend
-    await handleSaveCurrentSetlist(updatedSetlist.name, updatedSetlist.items);
   };
 
   const handleAddAnnouncementToSetlist = (content: string) => {
@@ -507,6 +574,7 @@ export default function App() {
         onOpenDisplaySettings={() => setIsDisplaySettingsModalOpen(true)}
         isConnected={isConnected}
         liveStateActive={liveState.type === 'lyric' || liveState.type === 'announcement'}
+        isOffline={isOffline}
         activeMobileTab={activeMobileTab}
         onSelectMobileTab={setActiveMobileTab}
       />

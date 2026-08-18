@@ -11,8 +11,10 @@ import {
   Key,
   Mail,
   SlidersHorizontal,
+  HardDrive,
 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
+import { getEnvironmentInfo } from '../utils/envUtils';
 
 interface SyncSongModalProps {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
   onClose,
   onSyncSuccess,
 }) => {
+  const envInfo = getEnvironmentInfo();
   const [remoteUrl, setRemoteUrl] = useState(() => {
     return localStorage.getItem('pentaslirik_sync_remote_url') || '';
   });
@@ -58,7 +61,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !envInfo.isLocal) return null;
 
   const handleSync = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,9 +145,19 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
               <CloudDownload className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white font-display">
-                Tarik Lagu dari VPS Cloud
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white font-display">
+                  Tarik Lagu dari VPS Cloud
+                </h2>
+                <span
+                  id="badge-sync-local-mode"
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-500/10 border-emerald-500/30 text-emerald-400 flex items-center gap-1 shrink-0"
+                  title={envInfo.description}
+                >
+                  <HardDrive className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>LOCAL</span>
+                </span>
+              </div>
               <p className="text-xs text-white/50">
                 Sinkronkan pustaka lagu dari server PentasLirik VPS ke database lokal ini
               </p>

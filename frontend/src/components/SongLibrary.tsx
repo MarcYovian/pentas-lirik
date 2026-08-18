@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, Music, Edit3, PlusCircle, CloudDownload } from 'lucide-react';
 import { Song } from '../types';
+import { getEnvironmentInfo } from '../utils/envUtils';
 
 interface SongLibraryProps {
   songs: Song[];
@@ -22,6 +23,7 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
   onOpenSyncModal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const envInfo = getEnvironmentInfo();
 
   const filteredSongs = songs.filter(
     (s) =>
@@ -41,15 +43,17 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            id="btn-open-sync-modal"
-            onClick={onOpenSyncModal}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-semibold rounded-xl transition min-h-[36px] touch-manipulation active:scale-95"
-            title="Sync songs from VPS Cloud"
-          >
-            <CloudDownload className="w-3.5 h-3.5 text-blue-400" />
-            <span className="hidden sm:inline">Sync Cloud</span>
-          </button>
+          {envInfo.isLocal && (
+            <button
+              id="btn-open-sync-modal"
+              onClick={onOpenSyncModal}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-semibold rounded-xl transition min-h-[36px] touch-manipulation active:scale-95"
+              title="Sync songs from VPS Cloud"
+            >
+              <CloudDownload className="w-3.5 h-3.5 text-blue-400" />
+              <span className="hidden sm:inline">Sync Cloud</span>
+            </button>
+          )}
           <button
             id="btn-add-new-song"
             onClick={onOpenAddModal}

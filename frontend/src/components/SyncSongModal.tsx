@@ -12,6 +12,9 @@ import {
   Mail,
   SlidersHorizontal,
   HardDrive,
+  Music,
+  ListMusic,
+  Tv,
 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
 import { getEnvironmentInfo } from '../utils/envUtils';
@@ -22,7 +25,17 @@ interface SyncSongModalProps {
   onSyncSuccess: () => void;
 }
 
-interface SyncStats {
+interface ScopeStats {
+  total: number;
+  created: number;
+  updated: number;
+  skipped: number;
+}
+
+interface SyncStatsResponse {
+  songs?: ScopeStats;
+  setlists?: ScopeStats;
+  presets?: ScopeStats;
   total_fetched: number;
   created: number;
   updated: number;
@@ -49,9 +62,23 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
   const [apiToken, setApiToken] = useState('');
   const [conflictStrategy, setConflictStrategy] = useState<'skip' | 'overwrite'>('skip');
 
+  // Sync scopes
+  const [syncSongs, setSyncSongs] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pentaslirik_sync_scope_songs');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [syncSetlists, setSyncSetlists] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pentaslirik_sync_scope_setlists');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [syncPresets, setSyncPresets] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pentaslirik_sync_scope_presets');
+    return saved !== null ? saved === 'true' : false;
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
+  const [syncStats, setSyncStats] = useState<SyncStatsResponse | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,6 +87,23 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
       setPassword('');
     }
   }, [isOpen]);
+
+  // When Setlists sync is toggled ON, automatically enforce Songs sync ON
+  const handleToggleSetlists = (checked: boolean) => {
+    setSyncSetlists(checked);
+    if (checked && !syncSongs) {
+      setSyncSongs(true);
+    }
+  };
+
+  const handleToggleSongs = (checked: boolean) => {
+    if (!checked && syncSetlists) {
+      // If setlists is active, song sync is required
+      setSyncSongs(true);
+    } else {
+      setSyncSongs(checked);
+    }
+  };
 
   if (!isOpen || !envInfo.isLocal) return null;
 
@@ -71,6 +115,11 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
     const cleanUrl = remoteUrl.trim().replace(/\/+$/, '');
     if (!cleanUrl) {
       setErrorMessage('URL Remote VPS wajib diisi.');
+      return;
+    }
+
+    if (!syncSongs && !syncSetlists && !syncPresets) {
+      setErrorMessage('Pilih setidaknya satu modul data yang ingin disinkronkan.');
       return;
     }
 
@@ -90,13 +139,19 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
       // Save user preferences
       localStorage.setItem('pentaslirik_sync_remote_url', cleanUrl);
       localStorage.setItem('pentaslirik_sync_auth_mode', authMode);
+      localStorage.setItem('pentaslirik_sync_scope_songs', String(syncSongs));
+      localStorage.setItem('pentaslirik_sync_scope_setlists', String(syncSetlists));
+      localStorage.setItem('pentaslirik_sync_scope_presets', String(syncPresets));
       if (email.trim()) {
         localStorage.setItem('pentaslirik_sync_email', email.trim());
       }
 
-      const payload: Record<string, string> = {
+      const payload: Record<string, any> = {
         remote_url: cleanUrl,
         conflict_strategy: conflictStrategy,
+        sync_songs: syncSongs,
+        sync_setlists: syncSetlists,
+        sync_presets: syncPresets,
       };
 
       if (authMode === 'login') {
@@ -108,7 +163,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
 
       const res = await apiClient.post<{
         message: string;
-        data: SyncStats;
+        data: SyncStatsResponse;
       }>('/api/v1/songs/sync-remote', payload);
 
       if (res.data) {
@@ -122,7 +177,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        'Gagal melakukan sinkronisasi lagu dari VPS. Periksa URL dan koneksi Anda.';
+        'Gagal melakukan sinkronisasi data dari VPS. Periksa URL dan koneksi Anda.';
       setErrorMessage(msg);
     } finally {
       setIsLoading(false);
@@ -147,7 +202,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-white font-display">
-                  Tarik Lagu dari VPS Cloud
+                  Tarik Data dari VPS Cloud
                 </h2>
                 <span
                   id="badge-sync-local-mode"
@@ -159,7 +214,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-white/50">
-                Sinkronkan pustaka lagu dari server PentasLirik VPS ke database lokal ini
+                Sinkronkan lagu, setlist rundown, dan preset OBS dari server Cloud ke database lokal ini
               </p>
             </div>
           </div>
@@ -194,28 +249,121 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
             >
               <div className="flex items-center gap-2 text-emerald-300 font-semibold text-xs">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Sinkronisasi Berhasil Selesai!</span>
+                <span>Sinkronisasi Selesai Berhasil!</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                <div className="bg-black/30 p-2 rounded-lg border border-white/5">
-                  <div className="text-[10px] text-white/50 uppercase">Total</div>
-                  <div className="text-sm font-bold text-white mono">{syncStats.total_fetched}</div>
-                </div>
-                <div className="bg-black/30 p-2 rounded-lg border border-emerald-500/20">
-                  <div className="text-[10px] text-emerald-400 uppercase">Baru</div>
-                  <div className="text-sm font-bold text-emerald-300 mono">+{syncStats.created}</div>
-                </div>
-                <div className="bg-black/30 p-2 rounded-lg border border-blue-500/20">
-                  <div className="text-[10px] text-blue-400 uppercase">Diperbarui</div>
-                  <div className="text-sm font-bold text-blue-300 mono">~{syncStats.updated}</div>
-                </div>
-                <div className="bg-black/30 p-2 rounded-lg border border-amber-500/20">
-                  <div className="text-[10px] text-amber-400 uppercase">Dilewati</div>
-                  <div className="text-sm font-bold text-amber-300 mono">{syncStats.skipped}</div>
-                </div>
+
+              {/* Scope Breakdown */}
+              <div className="space-y-2 text-xs">
+                {syncStats.songs && syncStats.songs.total > 0 && (
+                  <div className="bg-black/30 p-2.5 rounded-lg border border-white/5 flex items-center justify-between">
+                    <span className="text-white/70 flex items-center gap-1.5 font-medium">
+                      <Music className="w-3.5 h-3.5 text-blue-400" /> Lagu & Lirik:
+                    </span>
+                    <span className="text-white/90 mono">
+                      {syncStats.songs.total} total (<span className="text-emerald-400">+{syncStats.songs.created} baru</span>, <span className="text-blue-400">~{syncStats.songs.updated} update</span>, <span className="text-amber-400">{syncStats.songs.skipped} skip</span>)
+                    </span>
+                  </div>
+                )}
+
+                {syncStats.setlists && syncStats.setlists.total > 0 && (
+                  <div className="bg-black/30 p-2.5 rounded-lg border border-white/5 flex items-center justify-between">
+                    <span className="text-white/70 flex items-center gap-1.5 font-medium">
+                      <ListMusic className="w-3.5 h-3.5 text-purple-400" /> Setlist Rundown:
+                    </span>
+                    <span className="text-white/90 mono">
+                      {syncStats.setlists.total} total (<span className="text-emerald-400">+{syncStats.setlists.created} baru</span>, <span className="text-blue-400">~{syncStats.setlists.updated} update</span>, <span className="text-amber-400">{syncStats.setlists.skipped} skip</span>)
+                    </span>
+                  </div>
+                )}
+
+                {syncStats.presets && syncStats.presets.total > 0 && (
+                  <div className="bg-black/30 p-2.5 rounded-lg border border-white/5 flex items-center justify-between">
+                    <span className="text-white/70 flex items-center gap-1.5 font-medium">
+                      <Tv className="w-3.5 h-3.5 text-amber-400" /> Preset OBS:
+                    </span>
+                    <span className="text-white/90 mono">
+                      {syncStats.presets.total} total (<span className="text-emerald-400">+{syncStats.presets.created} baru</span>, <span className="text-blue-400">~{syncStats.presets.updated} update</span>, <span className="text-amber-400">{syncStats.presets.skipped} skip</span>)
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
+
+          {/* Sync Scope Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-white/80 flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" />
+              <span>Modul Data yang Ingin Ditarik</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <label
+                className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition ${
+                  syncSongs
+                    ? 'bg-blue-600/15 border-blue-500/40 text-white'
+                    : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={syncSongs}
+                  disabled={isLoading || syncSetlists}
+                  onChange={(e) => handleToggleSongs(e.target.checked)}
+                  className="accent-blue-500 rounded"
+                />
+                <div className="text-xs">
+                  <div className="font-semibold flex items-center gap-1">
+                    <Music className="w-3 h-3 text-blue-400" /> Lagu & Lirik
+                  </div>
+                  {syncSetlists && (
+                    <div className="text-[9px] text-blue-400/80 mt-0.5">Wajib untuk Setlist</div>
+                  )}
+                </div>
+              </label>
+
+              <label
+                className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition ${
+                  syncSetlists
+                    ? 'bg-purple-600/15 border-purple-500/40 text-white'
+                    : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={syncSetlists}
+                  disabled={isLoading}
+                  onChange={(e) => handleToggleSetlists(e.target.checked)}
+                  className="accent-purple-500 rounded"
+                />
+                <div className="text-xs">
+                  <div className="font-semibold flex items-center gap-1">
+                    <ListMusic className="w-3 h-3 text-purple-400" /> Setlist Rundown
+                  </div>
+                </div>
+              </label>
+
+              <label
+                className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition ${
+                  syncPresets
+                    ? 'bg-amber-600/15 border-amber-500/40 text-white'
+                    : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={syncPresets}
+                  disabled={isLoading}
+                  onChange={(e) => setSyncPresets(e.target.checked)}
+                  className="accent-amber-500 rounded"
+                />
+                <div className="text-xs">
+                  <div className="font-semibold flex items-center gap-1">
+                    <Tv className="w-3 h-3 text-amber-400" /> Preset OBS
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
 
           {/* Remote VPS URL */}
           <div className="space-y-1.5">
@@ -331,7 +479,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
           <div className="space-y-2 pt-1">
             <label className="text-xs font-semibold text-white/80 flex items-center gap-1.5">
               <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" />
-              <span>Jika Lagu Sudah Ada di Database Lokal</span>
+              <span>Jika Data Sudah Ada di Database Lokal</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div
@@ -354,7 +502,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
                 <div>
                   <div className="text-xs font-bold text-white">Lewati (Skip)</div>
                   <div className="text-[10px] text-white/50 leading-tight mt-0.5">
-                    Hanya tambahkan lagu baru. Lagu lokal yang sudah ada tidak akan diubah.
+                    Hanya tambahkan data baru. Data lokal yang sudah ada tidak akan diubah.
                   </div>
                 </div>
               </div>
@@ -379,7 +527,7 @@ export const SyncSongModal: React.FC<SyncSongModalProps> = ({
                 <div>
                   <div className="text-xs font-bold text-white">Timpa / Perbarui</div>
                   <div className="text-[10px] text-white/50 leading-tight mt-0.5">
-                    Perbarui bait lirik lokal mengikuti versi terbaru dari VPS.
+                    Perbarui lirik, setlist, dan preset lokal mengikuti versi terbaru dari VPS.
                   </div>
                 </div>
               </div>

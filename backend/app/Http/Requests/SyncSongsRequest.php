@@ -28,6 +28,9 @@ class SyncSongsRequest extends FormRequest
             'api_token' => ['nullable', 'string'],
             'email' => ['nullable', 'email'],
             'password' => ['nullable', 'string'],
+            'sync_songs' => ['nullable', 'boolean'],
+            'sync_setlists' => ['nullable', 'boolean'],
+            'sync_presets' => ['nullable', 'boolean'],
         ];
     }
 

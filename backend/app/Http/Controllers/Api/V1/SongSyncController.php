@@ -25,11 +25,15 @@ class SongSyncController extends Controller
             apiToken: $validated['api_token'] ?? null,
             email: $validated['email'] ?? null,
             password: $validated['password'] ?? null,
-            conflictStrategy: $validated['conflict_strategy']
+            conflictStrategy: $validated['conflict_strategy'],
+            syncSongs: $validated['sync_songs'] ?? true,
+            syncSetlists: $validated['sync_setlists'] ?? false,
+            syncPresets: $validated['sync_presets'] ?? false,
+            userId: $request->user()?->id
         );
 
         return response()->json([
-            'message' => 'Sinkronisasi lagu dari remote VPS berhasil diselesaikan.',
+            'message' => 'Sinkronisasi data dari remote VPS berhasil diselesaikan.',
             'data' => $result,
         ]);
     }

@@ -9,6 +9,7 @@ test.describe('Song Sync Cloud E2E Tests', () => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.goto('/');
+    await page.waitForSelector('#btn-quick-operator', { timeout: 10000 });
     await page.click('#btn-quick-operator');
     await page.click('#login-submit-btn');
     await expect(page.locator('#navbar-header')).toBeVisible();
@@ -23,7 +24,7 @@ test.describe('Song Sync Cloud E2E Tests', () => {
     // 2. Verify Sync Modal overlay is displayed
     const modalOverlay = page.locator('#modal-sync-songs-overlay');
     await expect(modalOverlay).toBeVisible();
-    await expect(page.locator('#modal-sync-songs-container')).toContainText('Tarik Lagu dari VPS Cloud');
+    await expect(page.locator('#modal-sync-songs-container')).toContainText('Tarik Data dari VPS Cloud');
 
     // 3. Fill Remote URL
     await page.fill('#input-sync-remote-url', 'https://pentas.staging.example.com');

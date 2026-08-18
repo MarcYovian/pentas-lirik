@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#0F0F0F"/>
+  <rect x="24" y="24" width="464" height="464" rx="72" fill="#18181B" stroke="#2563EB" stroke-width="8"/>
+  <!-- Radio Waves -->
+  <circle cx="256" cy="300" r="40" fill="#2563EB"/>
+  <path d="M180 230a108 108 0 0 1 152 0" fill="none" stroke="#60A5FA" stroke-width="20" stroke-linecap="round"/>
+  <path d="M130 180a180 180 0 0 1 252 0" fill="none" stroke="#3B82F6" stroke-width="20" stroke-linecap="round"/>
+  <path d="M80 130a252 252 0 0 1 352 0" fill="none" stroke="#1D4ED8" stroke-width="20" stroke-linecap="round"/>
+  <!-- Text Logo -->
+  <text x="256" y="425" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="3">PENTAS LIRIK</text>
+</svg>

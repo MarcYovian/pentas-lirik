@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Radio, Lock, Mail, LogIn, Shield, UserCheck } from 'lucide-react';
+import { Radio, Lock, Mail, LogIn, Shield, UserCheck, HardDrive, Cloud } from 'lucide-react';
 import { User } from '../types';
+import { getEnvironmentInfo } from '../utils/envUtils';
 
 interface LoginViewProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -12,6 +13,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, authError 
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const envInfo = getEnvironmentInfo();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +64,23 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, authError 
           <p className="text-xs text-white/40">
             Low-Latency Live Streaming Lyric Control System
           </p>
+          <div className="pt-1 flex justify-center">
+            <span
+              id="login-env-badge"
+              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full border ${
+                envInfo.isLocal
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+              }`}
+            >
+              {envInfo.isLocal ? (
+                <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Cloud className="w-3.5 h-3.5 text-indigo-400" />
+              )}
+              <span>{envInfo.label} ({envInfo.hostname})</span>
+            </span>
+          </div>
         </div>
 
         {displayMessage && (

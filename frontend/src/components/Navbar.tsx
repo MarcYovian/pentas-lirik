@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Radio, Copy, Check, Users, LogOut, ExternalLink, Monitor, Sliders, Menu, X, Music, ListMusic, Zap } from 'lucide-react';
+import { Radio, Copy, Check, Users, LogOut, ExternalLink, Monitor, Sliders, Menu, X, Music, ListMusic, Zap, HardDrive, Cloud } from 'lucide-react';
 import { User } from '../types';
+import { getEnvironmentInfo } from '../utils/envUtils';
 
 interface NavbarProps {
   user: User;
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const envInfo = getEnvironmentInfo();
 
   const displayUrl = `${window.location.origin}/display`;
 
@@ -56,8 +58,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="hidden sm:inline-block text-[10px] bg-white/10 text-white/70 px-1.5 py-0.5 rounded mono">v1.0</span>
         </div>
 
+        {/* Environment Mode Badge (Local Venue vs Cloud VPS) */}
+        <div
+          id="badge-environment-mode"
+          className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border transition cursor-default shrink-0 ${
+            envInfo.isLocal
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+              : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+          }`}
+          title={envInfo.description}
+        >
+          {envInfo.isLocal ? (
+            <HardDrive className="w-3 h-3 text-emerald-400 shrink-0" />
+          ) : (
+            <Cloud className="w-3 h-3 text-indigo-400 shrink-0" />
+          )}
+          <span className="hidden xs:inline sm:inline">{envInfo.label}</span>
+          <span className="xs:hidden sm:hidden">{envInfo.isLocal ? 'LOCAL' : 'CLOUD'}</span>
+        </div>
+
         {/* Live / WebSocket Connection Status */}
-        <div id="connection-status" className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/10">
+        <div id="connection-status" className="hidden sm:flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/10">
           <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-ping' : 'bg-red-500'}`} />
           <span className="text-white/70 font-medium">
             {isConnected ? 'Online' : 'Connecting'}

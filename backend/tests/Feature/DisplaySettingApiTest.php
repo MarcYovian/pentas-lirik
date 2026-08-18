@@ -16,6 +16,12 @@ class DisplaySettingApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Event::fake([DisplaySettingsUpdatedEvent::class]);
+    }
+
     #[Test]
     public function test_can_get_active_display_settings(): void
     {

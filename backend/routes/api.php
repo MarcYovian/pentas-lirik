@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\DisplaySettingController;
 use App\Http\Controllers\Api\V1\LiveControlController;
 use App\Http\Controllers\Api\V1\SetlistController;
 use App\Http\Controllers\Api\V1\SongController;
+use App\Http\Controllers\Api\V1\SongSyncController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/live/clear', [LiveControlController::class, 'clear']);
 
         // Songs & Lyrics Management API
+        Route::post('/songs/sync-remote', [SongSyncController::class, 'sync']);
         Route::apiResource('songs', SongController::class);
 
         // Setlists & Items Management API

@@ -7,6 +7,7 @@ import { SongLibrary } from './components/SongLibrary';
 import { SetlistRundown } from './components/SetlistRundown';
 import { LiveControlPanel } from './components/LiveControlPanel';
 import { SongModal } from './components/SongModal';
+import { SyncSongModal } from './components/SyncSongModal';
 import { UserManagementModal } from './components/UserManagementModal';
 import { DisplaySettingsPanel } from './components/settings/DisplaySettingsPanel';
 import { OBSDisplay } from './components/OBSDisplay';
@@ -75,6 +76,7 @@ export default function App() {
 
   // Modal States
   const [isSongModalOpen, setIsSongModalOpen] = useState(false);
+  const [isSyncSongModalOpen, setIsSyncSongModalOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isUserMgmtModalOpen, setIsUserMgmtModalOpen] = useState(false);
   const [isDisplaySettingsModalOpen, setIsDisplaySettingsModalOpen] = useState(false);
@@ -610,6 +612,7 @@ export default function App() {
                 setEditingSong(song);
                 setIsSongModalOpen(true);
               }}
+              onOpenSyncModal={() => setIsSyncSongModalOpen(true)}
             />
           )}
         </div>
@@ -634,6 +637,7 @@ export default function App() {
                 setEditingSong(song);
                 setIsSongModalOpen(true);
               }}
+              onOpenSyncModal={() => setIsSyncSongModalOpen(true)}
             />
           </div>
 
@@ -685,6 +689,13 @@ export default function App() {
         }}
         onSave={handleSaveSong}
         onDelete={handleDeleteSong}
+      />
+
+      {/* Sync Song from VPS Modal */}
+      <SyncSongModal
+        isOpen={isSyncSongModalOpen}
+        onClose={() => setIsSyncSongModalOpen(false)}
+        onSyncSuccess={loadData}
       />
 
       {/* User Management Modal */}

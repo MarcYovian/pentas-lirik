@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Music, Edit3, PlusCircle } from 'lucide-react';
+import { Search, Plus, Music, Edit3, PlusCircle, CloudDownload } from 'lucide-react';
 import { Song } from '../types';
 
 interface SongLibraryProps {
@@ -9,6 +9,7 @@ interface SongLibraryProps {
   onAddSongToSetlist: (song: Song) => void;
   onOpenAddModal: () => void;
   onOpenEditModal: (song: Song) => void;
+  onOpenSyncModal: () => void;
 }
 
 export const SongLibrary: React.FC<SongLibraryProps> = ({
@@ -18,6 +19,7 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
   onAddSongToSetlist,
   onOpenAddModal,
   onOpenEditModal,
+  onOpenSyncModal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -38,15 +40,26 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
             {songs.length}
           </span>
         </div>
-        <button
-          id="btn-add-new-song"
-          onClick={onOpenAddModal}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow transition min-h-[36px] touch-manipulation active:scale-95"
-          title="Add New Song to Library"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Lagu</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            id="btn-open-sync-modal"
+            onClick={onOpenSyncModal}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-semibold rounded-xl transition min-h-[36px] touch-manipulation active:scale-95"
+            title="Sync songs from VPS Cloud"
+          >
+            <CloudDownload className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden sm:inline">Sync Cloud</span>
+          </button>
+          <button
+            id="btn-add-new-song"
+            onClick={onOpenAddModal}
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow transition min-h-[36px] touch-manipulation active:scale-95"
+            title="Add New Song to Library"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Lagu</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}

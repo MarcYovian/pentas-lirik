@@ -27,7 +27,17 @@ export const SongModal: React.FC<SongModalProps> = ({
     if (song) {
       setTitle(song.title);
       setArtist(song.artist);
-      setLyricsRaw(song.lyrics_raw || '');
+      const initialLyrics = song.lyrics_raw || (
+        song.lyrics && song.lyrics.length > 0
+          ? song.lyrics
+              .map((chunk) => {
+                const label = chunk.label ? (chunk.label.startsWith('[') ? chunk.label : `[${chunk.label}]`) : '[VERSE]';
+                return `${label}\n${chunk.content}`;
+              })
+              .join('\n\n')
+          : ''
+      );
+      setLyricsRaw(initialLyrics);
     } else {
       setTitle('');
       setArtist('');

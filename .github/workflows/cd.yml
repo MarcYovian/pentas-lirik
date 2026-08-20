@@ -24,7 +24,7 @@ jobs:
           echo "==========================================================="
           
           # 1. Masuk ke direktori repositori proyek
-          cd /apps/repos/pentas-lirik
+          cd "$HOME/apps/repos/pentas-lirik" || cd ~/apps/repos/pentas-lirik || cd /apps/repos/pentas-lirik
           
           # 2. Tarik kode terbaru dari branch main
           echo "📥 [Step 1/6] Menarik kode terbaru dari GitHub (git pull)..."

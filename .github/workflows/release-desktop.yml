@@ -138,6 +138,7 @@ jobs:
       - name: Package Desktop Executables
         working-directory: ./frontend
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --publish always
 

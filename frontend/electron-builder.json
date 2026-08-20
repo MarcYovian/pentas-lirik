@@ -4,6 +4,11 @@
   "directories": {
     "output": "release"
   },
+  "publish": {
+    "provider": "github",
+    "owner": "MarcYovian",
+    "repo": "pentas-lirik"
+  },
   "files": [
     "dist/**/*",
     "public/**/*",

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 
 class DisplaySetting extends Model
@@ -13,6 +15,7 @@ class DisplaySetting extends Model
     protected $table = 'display_settings';
 
     protected $fillable = [
+        'organization_id',
         'name',
         'is_active',
         'font_size',
@@ -46,11 +49,36 @@ class DisplaySetting extends Model
     ];
 
     /**
+     * Organization this setting belongs to.
+     */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    /**
+     * Scope query to organization.
+     */
+    public function scopeForOrganization(Builder $query, ?int $orgId): Builder
+    {
+        if ($orgId) {
+            return $query->where('organization_id', $orgId);
+        }
+
+        return $query;
+    }
+
+    /**
      * Get the current active display setting.
      */
-    public static function getActiveSetting(): ?self
+    public static function getActiveSetting(?int $orgId = null): ?self
     {
-        return self::where('is_active', true)->first();
+        $query = self::where('is_active', true);
+        if ($orgId) {
+            $query->where('organization_id', $orgId);
+        }
+
+        return $query->first();
     }
 
     /**
@@ -59,7 +87,11 @@ class DisplaySetting extends Model
     public function activate(): bool
     {
         return DB::transaction(function () {
-            self::where('is_active', true)->update(['is_active' => false]);
+            $query = self::where('is_active', true);
+            if ($this->organization_id) {
+                $query->where('organization_id', $this->organization_id);
+            }
+            $query->update(['is_active' => false]);
             $this->is_active = true;
 
             return $this->save();

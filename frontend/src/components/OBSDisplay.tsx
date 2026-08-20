@@ -5,6 +5,15 @@ import { DisplaySetting, DEFAULT_DISPLAY_SETTING } from '../types/DisplaySetting
 import { buildDisplayInlineStyles } from '../utils/styleUtils';
 
 export const OBSDisplay: React.FC = () => {
+  // Extract org query param if present (?org=slug)
+  const orgSlug = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('org') || params.get('organization') || null;
+    }
+    return null;
+  }, []);
+
   // Live State for lyric and announcement text content
   const [liveState, setLiveState] = useState<LiveState>({
     type: 'clear',
@@ -15,7 +24,8 @@ export const OBSDisplay: React.FC = () => {
 
   // Display Styling State with localStorage zero-flicker caching
   const [displaySetting, setDisplaySetting] = useState<DisplaySetting>(() => {
-    const saved = localStorage.getItem('obs_display_settings');
+    const cacheKey = orgSlug ? `obs_display_settings_${orgSlug}` : 'obs_display_settings';
+    const saved = localStorage.getItem(cacheKey);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -26,7 +36,23 @@ export const OBSDisplay: React.FC = () => {
 
   // Initial Load Sync for Live State & Display Styling Settings
   useEffect(() => {
-    const fetchInitialData = async () => {
+    let resolvedOrgId: number | null = null;
+
+    const resolveOrgAndFetch = async () => {
+      if (orgSlug && !resolvedOrgId) {
+        try {
+          const orgRes = await fetch(`/api/v1/organizations/public/${encodeURIComponent(orgSlug)}`);
+          if (orgRes.ok) {
+            const orgJson = await orgRes.json();
+            if (orgJson.data?.id) {
+              resolvedOrgId = orgJson.data.id;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to resolve organization slug for OBS Display:', e);
+        }
+      }
+
       // 1. Sync Live State
       try {
         const res = await fetch('/api/v1/state/live');
@@ -44,12 +70,17 @@ export const OBSDisplay: React.FC = () => {
 
       // 2. Sync Display Setting Customization
       try {
-        const settingsRes = await fetch('/api/v1/display/settings');
+        const settingsUrl = resolvedOrgId
+          ? `/api/v1/display/settings?organization_id=${resolvedOrgId}`
+          : '/api/v1/display/settings';
+
+        const settingsRes = await fetch(settingsUrl);
         if (settingsRes.ok) {
           const settingsJson = await settingsRes.json();
           if (settingsJson.data) {
             setDisplaySetting(settingsJson.data);
-            localStorage.setItem('obs_display_settings', JSON.stringify(settingsJson.data));
+            const cacheKey = orgSlug ? `obs_display_settings_${orgSlug}` : 'obs_display_settings';
+            localStorage.setItem(cacheKey, JSON.stringify(settingsJson.data));
           }
         }
       } catch (err) {
@@ -57,10 +88,10 @@ export const OBSDisplay: React.FC = () => {
       }
     };
 
-    fetchInitialData();
-    const pollInterval = setInterval(fetchInitialData, 500);
+    resolveOrgAndFetch();
+    const pollInterval = setInterval(resolveOrgAndFetch, 500);
     return () => clearInterval(pollInterval);
-  }, []);
+  }, [orgSlug]);
 
   // Real-Time WebSocket Listener (Reverb / Echo Engine)
   useEffect(() => {
@@ -99,13 +130,14 @@ export const OBSDisplay: React.FC = () => {
           } else if (messageData.type === 'INIT_STATE' && messageData.payload) {
             setLiveState(messageData.payload);
           }
-          
+
           // Handle Real-Time Styling Updates (Zero-Flicker)
           if (evt === 'display:settings-updated' || evt === 'App\\Events\\DisplaySettingsUpdatedEvent') {
             const updatedPayload = messageData.data;
             if (updatedPayload && updatedPayload.font_size) {
               setDisplaySetting(updatedPayload);
-              localStorage.setItem('obs_display_settings', JSON.stringify(updatedPayload));
+              const cacheKey = orgSlug ? `obs_display_settings_${orgSlug}` : 'obs_display_settings';
+              localStorage.setItem(cacheKey, JSON.stringify(updatedPayload));
             }
           }
         } catch (err) {
@@ -129,7 +161,7 @@ export const OBSDisplay: React.FC = () => {
       if (ws) ws.close();
       clearTimeout(reconnectTimer);
     };
-  }, []);
+  }, [orgSlug]);
 
   // Compute dynamic inline styles (memoized for performance)
   const inlineStyles = useMemo(() => {

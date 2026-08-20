@@ -1,13 +1,53 @@
 export type UserRole = 'admin' | 'operator';
 
+export interface OrganizationPivot {
+  role: 'ADMIN' | 'OPERATOR';
+  status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
+}
+
+export interface Organization {
+  id: number;
+  name: string;
+  slug: string;
+  invite_code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+  songs_count?: number;
+  setlists_count?: number;
+  users_count?: number;
+  pivot?: OrganizationPivot;
+}
+
+export interface OrganizationMember {
+  id: number;
+  name: string;
+  email: string;
+  created_at: string;
+  pivot: OrganizationPivot;
+}
+
 export interface User {
   id: number;
   name: string;
   email: string;
   role: UserRole;
+  organizations?: Organization[];
   password?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface ServerStatsSummary {
+  total_organizations: number;
+  total_users: number;
+  total_songs: number;
+  total_setlists: number;
+}
+
+export interface ServerStats {
+  summary: ServerStatsSummary;
+  organizations: Organization[];
 }
 
 export interface LyricChunk {
@@ -19,6 +59,7 @@ export interface LyricChunk {
 
 export interface Song {
   id: number;
+  organization_id?: number;
   title: string;
   artist: string;
   lyrics_raw?: string;
@@ -39,6 +80,7 @@ export interface SetlistItem {
 
 export interface Setlist {
   id: number;
+  organization_id?: number;
   name: string;
   items: SetlistItem[];
   created_at?: string;

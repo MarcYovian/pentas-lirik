@@ -20,13 +20,24 @@ import {
   WifiOff,
   User as UserIcon,
   Sparkles,
+  Building2,
+  ChevronDown,
+  UserPlus,
+  Server,
+  Shield,
 } from 'lucide-react';
-import { User } from '../types';
+import { Organization, User } from '../types';
 import { getEnvironmentInfo } from '../utils/envUtils';
 import { onInstallPromptChange, promptPwaInstall } from '../utils/serviceWorkerRegistration';
 
 interface NavbarProps {
   user: User;
+  organizations?: Organization[];
+  currentOrganization?: Organization | null;
+  onOpenOrgSwitcher?: () => void;
+  onOpenTeamManagement?: () => void;
+  onOpenUserProfile?: () => void;
+  onOpenSuperAdmin?: () => void;
   onLogout: () => void;
   onOpenUserManagement: () => void;
   onOpenDisplaySettings: () => void;
@@ -39,6 +50,12 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
+  organizations = [],
+  currentOrganization = null,
+  onOpenOrgSwitcher,
+  onOpenTeamManagement,
+  onOpenUserProfile,
+  onOpenSuperAdmin,
   onLogout,
   onOpenUserManagement,
   onOpenDisplaySettings,
@@ -60,7 +77,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     return unsubscribe;
   }, []);
 
-  const displayUrl = `${window.location.origin}/display`;
+  const displayUrl = currentOrganization?.slug
+    ? `${window.location.origin}/display?org=${encodeURIComponent(currentOrganization.slug)}`
+    : `${window.location.origin}/display`;
 
   const handleCopyDisplayUrl = () => {
     navigator.clipboard.writeText(displayUrl);
@@ -79,12 +98,16 @@ export const Navbar: React.FC<NavbarProps> = ({
     await promptPwaInstall();
   };
 
+  const isOrgAdmin =
+    user.role === 'admin' ||
+    currentOrganization?.pivot?.role === 'ADMIN';
+
   return (
     <header
       id="navbar-header"
       className="sticky top-0 z-40 h-14 md:h-16 bg-[#121212]/95 backdrop-blur-xl border-b border-white/10 px-3 sm:px-5 lg:px-6 flex items-center justify-between shrink-0 select-none transition-all"
     >
-      {/* LEFT SECTION: Brand, Environment, & Live Broadcast Status */}
+      {/* LEFT SECTION: Brand, Organization Switcher, Environment & Live Status */}
       <div id="brand-container" className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Brand Logo */}
         <div
@@ -114,6 +137,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
+        {/* Organization Switcher Chip */}
+        {onOpenOrgSwitcher && (
+          <button
+            id="org-switcher-chip"
+            onClick={onOpenOrgSwitcher}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-amber-300 text-xs font-semibold transition active:scale-95 shadow-sm max-w-[130px] sm:max-w-[190px]"
+            title="Beralih atau Buat Organisasi"
+          >
+            <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="truncate">{currentOrganization?.name || 'Organisasi'}</span>
+            <ChevronDown className="w-3 h-3 text-amber-400/70 shrink-0" />
+          </button>
+        )}
+
         {/* Live Broadcast Pulse Indicator */}
         {liveStateActive && (
           <div
@@ -129,7 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Environment Badge (Local Venue vs Cloud VPS) */}
         <div
           id="badge-environment-mode"
-          className={`hidden xs:flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold px-2.5 py-1 rounded-full border transition cursor-default shrink-0 shadow-sm ${
+          className={`hidden xl:flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold px-2.5 py-1 rounded-full border transition cursor-default shrink-0 shadow-sm ${
             envInfo.isLocal
               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
               : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
@@ -166,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {isOffline ? (
             <>
               <WifiOff className="w-3 h-3 text-amber-400 shrink-0" />
-              <span className="font-semibold hidden xs:inline">Offline Cache</span>
+              <span className="font-semibold hidden sm:inline">Offline Cache</span>
             </>
           ) : (
             <>
@@ -175,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   isConnected ? 'bg-emerald-400 animate-ping' : 'bg-rose-500 animate-pulse'
                 }`}
               />
-              <span className="font-semibold hidden xs:inline">
+              <span className="font-semibold hidden sm:inline">
                 {isConnected ? 'Online' : 'Connecting'}
               </span>
             </>
@@ -189,8 +226,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         className="hidden lg:flex items-center gap-2 bg-white/[0.03] hover:bg-white/[0.05] pl-3 pr-1.5 py-1 rounded-xl border border-white/10 text-xs shadow-inner transition group"
       >
         <Monitor className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-        <span className="text-white/40 font-medium">OBS Source:</span>
-        <code className="text-blue-300 mono text-[11px] max-w-[160px] xl:max-w-[220px] truncate">
+        <span className="text-white/40 font-medium">OBS:</span>
+        <code className="text-blue-300 mono text-[11px] max-w-[130px] xl:max-w-[180px] truncate">
           {displayUrl}
         </code>
         <div className="flex items-center gap-1 ml-1">
@@ -218,7 +255,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <a
             id="open-display-tab-link"
-            href="/display"
+            href={displayUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-blue-400 transition"
@@ -244,19 +281,33 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
-        {/* Display Overlay Styler Button */}
-        <button
-          id="display-settings-btn"
-          onClick={onOpenDisplaySettings}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/25 text-xs font-semibold rounded-xl transition min-h-[36px] touch-manipulation active:scale-95 shadow-sm"
-          title="Kustomisasi Font, Warna, & Preset OBS Overlay"
-        >
-          <Sliders className="w-3.5 h-3.5 text-blue-400" />
-          <span className="hidden lg:inline">Display Style</span>
-          <span className="lg:hidden">Style</span>
-        </button>
+        {/* Team Management Button (For Org Admins) */}
+        {isOrgAdmin && onOpenTeamManagement && (
+          <button
+            id="btn-team-management"
+            onClick={onOpenTeamManagement}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/25 text-xs font-semibold rounded-xl transition min-h-[36px] touch-manipulation active:scale-95 shadow-sm"
+            title="Kelola Tim & Undangan Organisasi"
+          >
+            <Users className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Kelola Tim</span>
+          </button>
+        )}
 
-        {/* Admin User Management Button */}
+        {/* Super Admin Server Portal */}
+        {user.role === 'admin' && onOpenSuperAdmin && (
+          <button
+            id="btn-super-admin-portal"
+            onClick={onOpenSuperAdmin}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 text-xs font-semibold rounded-xl transition min-h-[36px] touch-manipulation active:scale-95 shadow-sm"
+            title="Portal Super Administrator Server"
+          >
+            <Server className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden xl:inline">Server Audit</span>
+          </button>
+        )}
+
+        {/* Global Admin User Management Button */}
         {user.role === 'admin' && (
           <button
             id="admin-user-mgmt-btn"
@@ -265,19 +316,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="Kelola Pengguna & Hak Akses"
           >
             <Users className="w-3.5 h-3.5 text-purple-400" />
-            <span className="hidden lg:inline">Users</span>
+            <span className="hidden xl:inline">Users</span>
           </button>
         )}
 
-        {/* User Profile Chip */}
+        {/* Display Overlay Styler Button */}
+        <button
+          id="display-settings-btn"
+          onClick={onOpenDisplaySettings}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/25 text-xs font-semibold rounded-xl transition min-h-[36px] touch-manipulation active:scale-95 shadow-sm"
+          title="Kustomisasi Font, Warna, & Preset OBS Overlay"
+        >
+          <Sliders className="w-3.5 h-3.5 text-blue-400" />
+          <span className="hidden xl:inline">Display Style</span>
+          <span className="xl:hidden">Style</span>
+        </button>
+
+        {/* User Profile Chip (Clickable to open User Profile & Password modal) */}
         <div
           id="user-info"
-          className="flex items-center gap-2 bg-white/[0.03] border border-white/10 px-2.5 py-1 rounded-xl text-xs"
+          onClick={onOpenUserProfile}
+          className="flex items-center gap-2 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 px-2.5 py-1 rounded-xl text-xs cursor-pointer transition"
+          title="Buka Profil & Ganti Password"
         >
           <div className="w-6 h-6 rounded-full bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-300 font-bold text-[11px] shrink-0">
             {user.name.charAt(0).toUpperCase()}
           </div>
-          <div className="flex flex-col text-left max-w-[100px] xl:max-w-[140px] truncate">
+          <div className="flex flex-col text-left max-w-[90px] xl:max-w-[130px] truncate">
             <span id="user-name-display" className="font-semibold text-white/90 truncate leading-tight">
               {user.name}
             </span>
@@ -378,8 +443,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 </div>
 
+                {/* Organization Switcher Card */}
+                {onOpenOrgSwitcher && (
+                  <div
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenOrgSwitcher();
+                    }}
+                    className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-amber-500/15 transition shadow-sm"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-xs shrink-0">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase font-bold text-amber-400/80">Organisasi Aktif</div>
+                        <div className="text-xs font-bold text-white truncate">
+                          {currentOrganization?.name || 'PentasLirik Main'}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-xs text-amber-300 font-semibold shrink-0">Ganti</span>
+                  </div>
+                )}
+
                 {/* User Profile Card */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-3.5 flex items-center justify-between shadow-inner">
+                <div
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenUserProfile && onOpenUserProfile();
+                  }}
+                  className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-2xl p-3.5 flex items-center justify-between shadow-inner cursor-pointer transition"
+                >
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-full bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-sm shrink-0">
                       {user.name.charAt(0).toUpperCase()}
@@ -461,8 +556,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {/* System Action Links */}
                 <div className="space-y-1.5 pt-3 border-t border-white/10">
                   <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 px-2 pb-1">
-                    Pengaturan & OBS
+                    Manajemen & Pengaturan
                   </div>
+
+                  {isOrgAdmin && onOpenTeamManagement && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onOpenTeamManagement();
+                      }}
+                      className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-white/5 hover:text-white transition min-h-[48px] touch-manipulation"
+                    >
+                      <Users className="w-5 h-5 text-indigo-400 shrink-0" />
+                      <span>Kelola Tim & Undangan</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => {
@@ -475,16 +583,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span>Display Overlay Style</span>
                   </button>
 
-                  {user.role === 'admin' && (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenUserProfile && onOpenUserProfile();
+                    }}
+                    className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-white/5 hover:text-white transition min-h-[48px] touch-manipulation"
+                  >
+                    <UserIcon className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span>Profil & Ganti Password</span>
+                  </button>
+
+                  {user.role === 'admin' && onOpenSuperAdmin && (
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
-                        onOpenUserManagement();
+                        onOpenSuperAdmin();
                       }}
                       className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm text-slate-300 hover:bg-white/5 hover:text-white transition min-h-[48px] touch-manipulation"
                     >
-                      <Users className="w-5 h-5 text-purple-400 shrink-0" />
-                      <span>Manajemen Pengguna</span>
+                      <Server className="w-5 h-5 text-rose-400 shrink-0" />
+                      <span>Portal Super Administrator</span>
                     </button>
                   )}
 
@@ -495,7 +614,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <Monitor className="w-4 h-4 text-blue-400" /> OBS Browser Source
                       </span>
                       <a
-                        href="/display"
+                        href={displayUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:underline flex items-center gap-1 font-medium"

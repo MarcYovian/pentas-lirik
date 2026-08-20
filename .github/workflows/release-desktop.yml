@@ -109,6 +109,7 @@ jobs:
     needs: [ci-validation-gate] # << GERBANG PENGAMAN: Jika ci-validation-gate gagal, job ini TIDAK AKAN JALAN
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
 
@@ -135,12 +136,40 @@ jobs:
         working-directory: ./frontend
         run: npm run desktop:build
 
+      - name: Cache Electron Binary Downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-cache-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-cache-
+
       - name: Package Desktop Executables
         working-directory: ./frontend
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --publish always
+        run: |
+          for i in 1 2 3; do
+            echo "Packaging desktop binaries (attempt $i/3)..."
+            if npx electron-builder --publish always; then
+              echo "Packaging succeeded!"
+              break
+            fi
+            if [ "$i" -eq 3 ]; then
+              echo "Packaging failed after 3 attempts."
+              exit 1
+            fi
+            echo "Retrying in 5 seconds due to network hiccup..."
+            sleep 5
+          done
 
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4

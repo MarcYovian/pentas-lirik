@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -122,6 +123,183 @@ class AuthApiTest extends TestCase
                     ],
                 ],
             ]);
+    }
+
+    #[Test]
+    public function test_user_can_register_new_organization_with_starter_pack(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Yohanes Marc',
+            'email' => 'yohanes@kapel.org',
+            'password' => 'password123',
+            'organization_name' => 'Kapel St Yohanes Rasul',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.user.email', 'yohanes@kapel.org')
+            ->assertJsonPath('data.organization.name', 'Kapel St Yohanes Rasul')
+            ->assertJsonPath('data.status', 'ACTIVE');
+
+        $orgId = $response->json('data.organization.id');
+        $org = Organization::find($orgId);
+
+        // Check starter pack seeded
+        $this->assertCount(3, $org->songs);
+        $this->assertCount(1, $org->displaySettings);
+
+        // Check user is active ADMIN in this organization
+        $this->assertDatabaseHas('organization_user', [
+            'organization_id' => $orgId,
+            'role' => 'ADMIN',
+            'status' => 'ACTIVE',
+        ]);
+    }
+
+    #[Test]
+    public function test_register_validates_duplicate_email(): void
+    {
+        User::factory()->create(['email' => 'existing@kapel.org']);
+
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Duplicate User',
+            'email' => 'existing@kapel.org',
+            'password' => 'password123',
+            'organization_name' => 'Another Church',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+    }
+
+    #[Test]
+    public function test_user_can_register_via_invite_code_with_pending_status(): void
+    {
+        $org = Organization::create([
+            'name' => 'Youth Fellowship',
+            'slug' => 'youth-fellowship',
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Budi Volunteer',
+            'email' => 'budi@volunteer.local',
+            'password' => 'password123',
+            'invite_code' => $org->invite_code,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'PENDING');
+
+        $user = User::where('email', 'budi@volunteer.local')->first();
+        $this->assertNotNull($user);
+
+        $this->assertDatabaseHas('organization_user', [
+            'organization_id' => $org->id,
+            'user_id' => $user->id,
+            'role' => 'OPERATOR',
+            'status' => 'PENDING',
+        ]);
+    }
+
+    #[Test]
+    public function test_register_fails_with_invalid_invite_code(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Ghost User',
+            'email' => 'ghost@unknown.local',
+            'password' => 'password123',
+            'invite_code' => 'PL-NONEXIST',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['invite_code']);
+    }
+
+    #[Test]
+    public function test_user_can_update_profile(): void
+    {
+        $user = User::factory()->create(['name' => 'Old Name', 'email' => 'old@example.com']);
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/profile', [
+            'name' => 'New Name',
+            'email' => 'new@example.com',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.user.name', 'New Name')
+            ->assertJsonPath('data.user.email', 'new@example.com');
+
+        $this->assertEquals('New Name', $user->fresh()->name);
+    }
+
+    #[Test]
+    public function test_update_profile_fails_if_email_taken_by_another_user(): void
+    {
+        User::factory()->create(['email' => 'taken@example.com']);
+        $user = User::factory()->create(['email' => 'user@example.com']);
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/profile', [
+            'name' => 'Attempt Duplicate',
+            'email' => 'taken@example.com',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+    }
+
+    #[Test]
+    public function test_user_can_update_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('oldpassword'),
+        ]);
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/password', [
+            'current_password' => 'oldpassword',
+            'password' => 'newpassword123',
+            'password_confirmation' => 'newpassword123',
+        ]);
+
+        $response->assertOk();
+        $this->assertTrue(Hash::check('newpassword123', $user->fresh()->password));
+    }
+
+    #[Test]
+    public function test_update_password_fails_if_current_password_wrong(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('actualpassword'),
+        ]);
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/password', [
+            'current_password' => 'wrongcurrentpassword',
+            'password' => 'newpassword123',
+            'password_confirmation' => 'newpassword123',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['current_password']);
+    }
+
+    #[Test]
+    public function test_update_password_fails_if_confirmation_mismatch(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('actualpassword'),
+        ]);
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/password', [
+            'current_password' => 'actualpassword',
+            'password' => 'newpassword123',
+            'password_confirmation' => 'mismatchedpassword',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['password']);
     }
 
     #[Test]

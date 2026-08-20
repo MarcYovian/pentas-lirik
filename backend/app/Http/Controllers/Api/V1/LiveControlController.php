@@ -51,6 +51,16 @@ class LiveControlController extends Controller
             'updated_at' => now()->toIso8601String(),
         ];
 
+        $user = $request->user();
+        if ($user && ! $user->isSuperAdmin() && $user->organizations()->count() > 0) {
+            $hasActiveMembership = $user->organizations()->wherePivot('status', 'ACTIVE')->exists();
+            if (! $hasActiveMembership) {
+                return response()->json([
+                    'message' => 'Akun Anda belum disetujui atau dinonaktifkan oleh Admin.',
+                ], 403);
+            }
+        }
+
         // Store live state in Redis cache indefinitely
         Cache::put(self::CACHE_KEY, $payload);
 
@@ -66,7 +76,7 @@ class LiveControlController extends Controller
     /**
      * Clear the live display screen and broadcast clear event.
      */
-    public function clear(): JsonResponse
+    public function clear(Request $request): JsonResponse
     {
         $payload = [
             'type' => 'clear',
@@ -77,6 +87,16 @@ class LiveControlController extends Controller
             'label' => null,
             'updated_at' => now()->toIso8601String(),
         ];
+
+        $user = $request->user();
+        if ($user && ! $user->isSuperAdmin() && $user->organizations()->count() > 0) {
+            $hasActiveMembership = $user->organizations()->wherePivot('status', 'ACTIVE')->exists();
+            if (! $hasActiveMembership) {
+                return response()->json([
+                    'message' => 'Akun Anda belum disetujui atau dinonaktifkan oleh Admin.',
+                ], 403);
+            }
+        }
 
         // Store cleared state in Redis cache
         Cache::put(self::CACHE_KEY, $payload);

@@ -10,6 +10,7 @@ export const AUTH_UNAUTHORIZED_EVENT = 'pentaslirik:unauthorized';
 export function clearAuthCredentials() {
   localStorage.removeItem('pentaslirik_token');
   localStorage.removeItem('pentaslirik_user');
+  localStorage.removeItem('pentaslirik_active_org_id');
 }
 
 /**
@@ -20,10 +21,29 @@ export function getStoredToken(): string | null {
 }
 
 /**
- * Unified fetch wrapper that attaches Bearer tokens and handles HTTP 401 responses.
+ * Retrieves the active organization ID from localStorage
+ */
+export function getStoredOrgId(): string | null {
+  return localStorage.getItem('pentaslirik_active_org_id');
+}
+
+/**
+ * Stores the active organization ID in localStorage
+ */
+export function setStoredOrgId(orgId: string | number | null) {
+  if (orgId) {
+    localStorage.setItem('pentaslirik_active_org_id', String(orgId));
+  } else {
+    localStorage.removeItem('pentaslirik_active_org_id');
+  }
+}
+
+/**
+ * Unified fetch wrapper that attaches Bearer tokens, Organization Header, and handles HTTP 401 responses.
  */
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getStoredToken();
+  const orgId = getStoredOrgId();
   const headers = new Headers(options.headers || {});
 
   if (!headers.has('Accept')) {
@@ -32,6 +52,10 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  if (orgId && !headers.has('X-Organization-Id')) {
+    headers.set('X-Organization-Id', String(orgId));
   }
 
   const mergedOptions: RequestInit = {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Zap, ListMusic, Music } from 'lucide-react';
-import { Song, Setlist, SetlistItem, User, LiveState, LyricChunk, WsMessage } from './types';
+import { Song, Setlist, SetlistItem, User, LiveState, LyricChunk, WsMessage, Organization } from './types';
 import { Navbar } from './components/Navbar';
 
 import { SongLibrary } from './components/SongLibrary';
@@ -9,10 +9,14 @@ import { LiveControlPanel } from './components/LiveControlPanel';
 import { SongModal } from './components/SongModal';
 import { SyncSongModal } from './components/SyncSongModal';
 import { UserManagementModal } from './components/UserManagementModal';
+import { OrganizationSwitcherModal } from './components/OrganizationSwitcherModal';
+import { TeamManagementModal } from './components/TeamManagementModal';
+import { UserProfileModal } from './components/UserProfileModal';
+import { SuperAdminModal } from './components/SuperAdminModal';
 import { DisplaySettingsPanel } from './components/settings/DisplaySettingsPanel';
 import { OBSDisplay } from './components/OBSDisplay';
 import { LoginView } from './components/LoginView';
-import { apiClient, AUTH_UNAUTHORIZED_EVENT } from './utils/apiClient';
+import { apiClient, AUTH_UNAUTHORIZED_EVENT, getStoredOrgId, setStoredOrgId } from './utils/apiClient';
 import {
   saveSongsToOfflineCache,
   getSongsFromOfflineCache,
@@ -43,6 +47,26 @@ export default function App() {
   });
 
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Multi-Tenancy Organizations State
+  const [organizations, setOrganizations] = useState<Organization[]>(() => {
+    if (user?.organizations && user.organizations.length > 0) {
+      return user.organizations;
+    }
+    return [];
+  });
+
+  const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(() => {
+    const savedOrgId = getStoredOrgId();
+    if (user?.organizations && user.organizations.length > 0) {
+      if (savedOrgId) {
+        const found = user.organizations.find((o) => String(o.id) === savedOrgId);
+        if (found) return found;
+      }
+      return user.organizations[0];
+    }
+    return null;
+  });
 
   // Global 401 Unauthorized Event Listener for Session Expiration Auto-Redirect
   useEffect(() => {
@@ -89,6 +113,30 @@ export default function App() {
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isUserMgmtModalOpen, setIsUserMgmtModalOpen] = useState(false);
   const [isDisplaySettingsModalOpen, setIsDisplaySettingsModalOpen] = useState(false);
+  const [isOrgSwitcherOpen, setIsOrgSwitcherOpen] = useState(false);
+  const [isTeamManagementOpen, setIsTeamManagementOpen] = useState(false);
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
+  const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
+
+  // Fetch initial organizations list
+  const fetchOrganizations = useCallback(async () => {
+    try {
+      const res = await apiClient.fetch('/api/v1/organizations');
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setOrganizations(json.data);
+        const savedOrgId = getStoredOrgId();
+        const found = json.data.find((o: Organization) => String(o.id) === savedOrgId);
+        const activeOrg = found || json.data[0] || null;
+        setCurrentOrganization(activeOrg);
+        if (activeOrg) {
+          setStoredOrgId(activeOrg.id);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load organizations:', e);
+    }
+  }, []);
 
   // Fetch initial data with IndexedDB caching & fallback
   const loadData = useCallback(async () => {
@@ -173,12 +221,12 @@ export default function App() {
     };
   }, [user, loadData]);
 
-
   useEffect(() => {
     if (user) {
+      fetchOrganizations();
       loadData();
     }
-  }, [user, loadData]);
+  }, [user, fetchOrganizations, loadData]);
 
   // WebSocket Connection for Dashboard State Sync
   useEffect(() => {
@@ -242,6 +290,20 @@ export default function App() {
     };
   }, [user]);
 
+  // Organization Switching Handlers
+  const handleSelectOrganization = (org: Organization) => {
+    setCurrentOrganization(org);
+    setStoredOrgId(org.id);
+    setSelectedSong(null);
+    setSelectedSetlistItem(null);
+    loadData();
+  };
+
+  const handleOrganizationCreated = (newOrg: Organization) => {
+    setOrganizations((prev) => [newOrg, ...prev.filter((o) => o.id !== newOrg.id)]);
+    handleSelectOrganization(newOrg);
+  };
+
   // Auth Handlers
   const handleLoginSuccess = (loggedInUser: User, authToken: string) => {
     setUser(loggedInUser);
@@ -249,6 +311,13 @@ export default function App() {
     setAuthError(null);
     localStorage.setItem('pentaslirik_user', JSON.stringify(loggedInUser));
     localStorage.setItem('pentaslirik_token', authToken);
+
+    if (loggedInUser.organizations && loggedInUser.organizations.length > 0) {
+      setOrganizations(loggedInUser.organizations);
+      const active = loggedInUser.organizations[0];
+      setCurrentOrganization(active);
+      setStoredOrgId(active.id);
+    }
   };
 
   const handleLogout = async () => {
@@ -260,6 +329,12 @@ export default function App() {
     setAuthError(null);
     localStorage.removeItem('pentaslirik_user');
     localStorage.removeItem('pentaslirik_token');
+    localStorage.removeItem('pentaslirik_active_org_id');
+  };
+
+  const handleUserUpdated = (updatedUser: User) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedUser } : updatedUser));
+    localStorage.setItem('pentaslirik_user', JSON.stringify(updatedUser));
   };
 
   // Song Library Handlers
@@ -532,7 +607,7 @@ export default function App() {
     }
   };
 
-  // Spacebar next chunk handler (FR-07.1)
+  // Spacebar next chunk handler
   const handleNextChunk = () => {
     if (!selectedSong || selectedSong.lyrics.length === 0) return;
 
@@ -563,12 +638,17 @@ export default function App() {
     return <LoginView onLoginSuccess={handleLoginSuccess} authError={authError} />;
   }
 
-
   return (
     <div id="app-root-container" className="flex flex-col min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden bg-[#0F0F0F] text-slate-100 no-select">
       {/* Top Header Navbar */}
       <Navbar
         user={user}
+        organizations={organizations}
+        currentOrganization={currentOrganization}
+        onOpenOrgSwitcher={() => setIsOrgSwitcherOpen(true)}
+        onOpenTeamManagement={() => setIsTeamManagementOpen(true)}
+        onOpenUserProfile={() => setIsUserProfileOpen(true)}
+        onOpenSuperAdmin={() => setIsSuperAdminOpen(true)}
         onLogout={handleLogout}
         onOpenUserManagement={() => setIsUserMgmtModalOpen(true)}
         onOpenDisplaySettings={() => setIsDisplaySettingsModalOpen(true)}
@@ -639,7 +719,15 @@ export default function App() {
                 setSelectedSetlistItem(null);
               }}
               allSongs={songs}
-              isModalOpen={isDisplaySettingsModalOpen || isSongModalOpen || isUserMgmtModalOpen}
+              isModalOpen={
+                isDisplaySettingsModalOpen ||
+                isSongModalOpen ||
+                isUserMgmtModalOpen ||
+                isOrgSwitcherOpen ||
+                isTeamManagementOpen ||
+                isUserProfileOpen ||
+                isSuperAdminOpen
+              }
             />
           )}
 
@@ -653,7 +741,6 @@ export default function App() {
               onSaveCurrentSetlist={handleSaveCurrentSetlist}
               onSelectSetlistItem={(item) => {
                 handleSelectSetlistItem(item);
-                // Optionally switch to live control panel on select
                 setActiveMobileTab('live');
               }}
               onRemoveItem={handleRemoveSetlistItem}
@@ -747,6 +834,51 @@ export default function App() {
         </div>
       </main>
 
+      {/* Organization Switcher & Creation Modal */}
+      <OrganizationSwitcherModal
+        isOpen={isOrgSwitcherOpen}
+        onClose={() => setIsOrgSwitcherOpen(false)}
+        organizations={organizations}
+        currentOrganization={currentOrganization}
+        onSelectOrganization={handleSelectOrganization}
+        onOrganizationCreated={handleOrganizationCreated}
+        authToken={token || ''}
+      />
+
+      {/* Team Management Modal (For Admins) */}
+      {currentOrganization && (
+        <TeamManagementModal
+          isOpen={isTeamManagementOpen}
+          onClose={() => setIsTeamManagementOpen(false)}
+          organization={currentOrganization}
+          authToken={token || ''}
+          onOrganizationUpdated={(updated) => {
+            setCurrentOrganization(updated);
+            setOrganizations((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+          }}
+        />
+      )}
+
+      {/* User Profile & Password Modal */}
+      {user && (
+        <UserProfileModal
+          isOpen={isUserProfileOpen}
+          onClose={() => setIsUserProfileOpen(false)}
+          user={user}
+          onUserUpdated={handleUserUpdated}
+          authToken={token || ''}
+        />
+      )}
+
+      {/* Super Admin Server Portal Modal */}
+      {user?.role === 'admin' && (
+        <SuperAdminModal
+          isOpen={isSuperAdminOpen}
+          onClose={() => setIsSuperAdminOpen(false)}
+          authToken={token || ''}
+        />
+      )}
+
       {/* Song Modal */}
       <SongModal
         isOpen={isSongModalOpen}
@@ -784,4 +916,3 @@ export default function App() {
     </div>
   );
 }
-

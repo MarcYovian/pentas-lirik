@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\DisplaySetting;
+use App\Models\Organization;
 use Illuminate\Database\Seeder;
 
 class DisplaySettingSeeder extends Seeder
@@ -12,8 +13,10 @@ class DisplaySettingSeeder extends Seeder
      */
     public function run(): void
     {
+        $defaultOrg = Organization::getDefault();
+
         DisplaySetting::updateOrCreate(
-            ['name' => 'Default Style'],
+            ['name' => 'Default Style', 'organization_id' => $defaultOrg->id],
             [
                 'is_active' => true,
                 'font_size' => 48,

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\LyricChunk;
+use App\Models\Organization;
 use App\Models\Setlist;
 use App\Models\SetlistItem;
 use App\Models\Song;
@@ -17,7 +18,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Seed Default Admin User
+        // 1. Seed Default Organization
+        $defaultOrg = Organization::firstOrCreate(
+            ['slug' => 'default'],
+            [
+                'name' => 'PentasLirik Main',
+                'description' => 'Default Organization',
+            ]
+        );
+
+        // 2. Seed Default Admin User
         $admin = User::firstOrCreate(
             ['email' => 'admin@pentaslirik.local'],
             [
@@ -26,8 +36,11 @@ class DatabaseSeeder extends Seeder
                 'role' => 'ADMIN',
             ]
         );
+        $admin->organizations()->syncWithoutDetaching([
+            $defaultOrg->id => ['role' => 'ADMIN'],
+        ]);
 
-        // 2. Seed Default Operator User
+        // 3. Seed Default Operator User
         $operator = User::firstOrCreate(
             ['email' => 'operator@pentaslirik.local'],
             [
@@ -36,10 +49,13 @@ class DatabaseSeeder extends Seeder
                 'role' => 'OPERATOR',
             ]
         );
+        $operator->organizations()->syncWithoutDetaching([
+            $defaultOrg->id => ['role' => 'OPERATOR'],
+        ]);
 
-        // 3. Seed Sample Songs
+        // 4. Seed Sample Songs
         $song1 = Song::firstOrCreate(
-            ['title' => 'Amazing Grace'],
+            ['title' => 'Amazing Grace', 'organization_id' => $defaultOrg->id],
             ['artist' => 'John Newton']
         );
 
@@ -59,7 +75,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $song2 = Song::firstOrCreate(
-            ['title' => '10,000 Reasons (Bless The Lord)'],
+            ['title' => '10,000 Reasons (Bless The Lord)', 'organization_id' => $defaultOrg->id],
             ['artist' => 'Matt Redman']
         );
 
@@ -74,7 +90,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $song3 = Song::firstOrCreate(
-            ['title' => 'What A Beautiful Name'],
+            ['title' => 'What A Beautiful Name', 'organization_id' => $defaultOrg->id],
             ['artist' => 'Hillsong Worship']
         );
 
@@ -89,7 +105,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $song4 = Song::firstOrCreate(
-            ['title' => 'Goodness Of God'],
+            ['title' => 'Goodness Of God', 'organization_id' => $defaultOrg->id],
             ['artist' => 'Bethel Music']
         );
 
@@ -98,9 +114,9 @@ class DatabaseSeeder extends Seeder
             ['content' => "I love You Lord\nFor Your mercy never fails me", 'order' => 1]
         );
 
-        // 4. Seed Sample Setlist
+        // 5. Seed Sample Setlist
         $setlist = Setlist::firstOrCreate(
-            ['user_id' => $operator->id, 'name' => 'Kebaktian Minggu Pagi - 10 AM']
+            ['user_id' => $operator->id, 'organization_id' => $defaultOrg->id, 'name' => 'Kebaktian Minggu Pagi - 10 AM']
         );
 
         SetlistItem::firstOrCreate(
@@ -113,7 +129,7 @@ class DatabaseSeeder extends Seeder
             ['order' => 2]
         );
 
-        // 5. Seed Default Display Settings
+        // 6. Seed Default Display Settings
         $this->call(DisplaySettingSeeder::class);
     }
 }

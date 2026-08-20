@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDisplayPresetRequest;
 use App\Http\Requests\UpdateDisplaySettingRequest;
 use App\Models\DisplaySetting;
+use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class DisplaySettingController extends Controller
@@ -20,11 +22,17 @@ class DisplaySettingController extends Controller
     /**
      * Get the currently active OBS display custom styling.
      */
-    public function show(): JsonResponse
+    public function show(Request $request): JsonResponse
     {
-        $settingData = Cache::remember(self::CACHE_KEY, 86400, function () {
-            $setting = DisplaySetting::getActiveSetting() ?? DisplaySetting::firstOrCreate(
-                ['name' => 'Default Style'],
+        $orgId = $request->header('X-Organization-Id')
+            ?? $request->query('organization_id')
+            ?? $request->query('org_id');
+
+        $cacheKey = $orgId ? self::CACHE_KEY."_{$orgId}" : self::CACHE_KEY;
+
+        $settingData = Cache::remember($cacheKey, 86400, function () use ($orgId) {
+            $setting = DisplaySetting::getActiveSetting($orgId) ?? DisplaySetting::firstOrCreate(
+                ['name' => 'Default Style', 'organization_id' => $orgId],
                 [
                     'is_active' => true,
                     'font_size' => 48,
@@ -59,14 +67,29 @@ class DisplaySettingController extends Controller
      */
     public function update(UpdateDisplaySettingRequest $request): JsonResponse
     {
-        $setting = DisplaySetting::getActiveSetting() ?? DisplaySetting::firstOrCreate(['name' => 'Default Style']);
+        $orgId = $request->header('X-Organization-Id')
+            ?? $request->query('organization_id')
+            ?? $request->query('org_id');
+
+        $user = $request->user();
+        if ($user && ! $user->isSuperAdmin() && $orgId) {
+            if (! $user->organizations()->where('organizations.id', $orgId)->wherePivot('status', 'ACTIVE')->exists()) {
+                abort(403, 'Anda tidak memiliki hak akses untuk mengubah styling di organisasi ini.');
+            }
+        }
+
+        $setting = DisplaySetting::getActiveSetting($orgId) ?? DisplaySetting::firstOrCreate(
+            ['name' => 'Default Style', 'organization_id' => $orgId]
+        );
 
         $setting->update($request->validated());
         $freshSetting = $setting->fresh();
 
+        $cacheKey = $orgId ? self::CACHE_KEY."_{$orgId}" : self::CACHE_KEY;
+
         // Invalidate and refresh cache with array representation
-        Cache::forget(self::CACHE_KEY);
-        Cache::put(self::CACHE_KEY, $freshSetting->toArray(), 86400);
+        Cache::forget($cacheKey);
+        Cache::put($cacheKey, $freshSetting->toArray(), 86400);
 
         // Broadcast real-time styling update to active OBS Display instances
         event(new DisplaySettingsUpdatedEvent($freshSetting->toArray()));
@@ -80,9 +103,17 @@ class DisplaySettingController extends Controller
     /**
      * Get list of all saved display setting presets.
      */
-    public function indexPresets(): JsonResponse
+    public function indexPresets(Request $request): JsonResponse
     {
-        $presets = DisplaySetting::orderBy('created_at', 'desc')->get();
+        $orgId = $request->header('X-Organization-Id')
+            ?? $request->query('organization_id')
+            ?? $request->query('org_id');
+
+        $query = DisplaySetting::orderBy('created_at', 'desc');
+        if ($orgId) {
+            $query->where('organization_id', $orgId);
+        }
+        $presets = $query->get();
 
         return response()->json([
             'data' => $presets,
@@ -94,8 +125,24 @@ class DisplaySettingController extends Controller
      */
     public function storePreset(StoreDisplayPresetRequest $request): JsonResponse
     {
+        $orgId = $request->input('organization_id')
+            ?? $request->header('X-Organization-Id')
+            ?? $request->user()?->organizations()->first()?->id
+            ?? Organization::getDefault()->id;
+
+        $user = $request->user();
+        if ($orgId && $user && ! $user->isSuperAdmin()) {
+            $hasExplicitOrg = $request->has('organization_id') || $request->hasHeader('X-Organization-Id');
+            if ($hasExplicitOrg) {
+                $isMember = $user->organizations()->where('organizations.id', $orgId)->wherePivot('status', 'ACTIVE')->exists();
+                if (! $isMember) {
+                    abort(403, 'Anda tidak memiliki hak akses untuk membuat preset di organisasi ini.');
+                }
+            }
+        }
+
         $preset = DisplaySetting::create(array_merge(
-            ['is_active' => false],
+            ['is_active' => false, 'organization_id' => $orgId],
             $request->validated()
         ));
 
@@ -111,13 +158,16 @@ class DisplaySettingController extends Controller
     public function updatePreset(int $id, StoreDisplayPresetRequest $request): JsonResponse
     {
         $preset = DisplaySetting::findOrFail($id);
+        $this->authorizePresetAccess($request, $preset);
+
         $preset->update($request->validated());
         $freshPreset = $preset->fresh();
 
         // If updated preset is currently active, refresh cache and broadcast real-time event
         if ($freshPreset->is_active) {
-            Cache::forget(self::CACHE_KEY);
-            Cache::put(self::CACHE_KEY, $freshPreset->toArray(), 86400);
+            $cacheKey = $freshPreset->organization_id ? self::CACHE_KEY."_{$freshPreset->organization_id}" : self::CACHE_KEY;
+            Cache::forget($cacheKey);
+            Cache::put($cacheKey, $freshPreset->toArray(), 86400);
             event(new DisplaySettingsUpdatedEvent($freshPreset->toArray()));
         }
 
@@ -130,16 +180,19 @@ class DisplaySettingController extends Controller
     /**
      * Atomically activate a display setting preset.
      */
-    public function activatePreset(int $id): JsonResponse
+    public function activatePreset(Request $request, int $id): JsonResponse
     {
         $preset = DisplaySetting::findOrFail($id);
+        $this->authorizePresetAccess($request, $preset);
 
         $preset->activate();
         $freshPreset = $preset->fresh();
 
+        $cacheKey = $freshPreset->organization_id ? self::CACHE_KEY."_{$freshPreset->organization_id}" : self::CACHE_KEY;
+
         // Invalidate and refresh cache
-        Cache::forget(self::CACHE_KEY);
-        Cache::put(self::CACHE_KEY, $freshPreset->toArray(), 86400);
+        Cache::forget($cacheKey);
+        Cache::put($cacheKey, $freshPreset->toArray(), 86400);
 
         // Broadcast real-time styling update
         event(new DisplaySettingsUpdatedEvent($freshPreset->toArray()));
@@ -153,9 +206,10 @@ class DisplaySettingController extends Controller
     /**
      * Delete a display setting preset profile.
      */
-    public function destroyPreset(int $id): JsonResponse
+    public function destroyPreset(Request $request, int $id): JsonResponse
     {
         $preset = DisplaySetting::findOrFail($id);
+        $this->authorizePresetAccess($request, $preset);
 
         if ($preset->is_active) {
             return response()->json([
@@ -168,5 +222,20 @@ class DisplaySettingController extends Controller
         return response()->json([
             'message' => 'Display preset deleted successfully.',
         ]);
+    }
+
+    /**
+     * Ensure the user has active membership in the preset's organization to prevent cross-tenant IDOR attacks.
+     */
+    protected function authorizePresetAccess(Request $request, DisplaySetting $preset): void
+    {
+        $user = $request->user();
+        if (! $user || $user->isSuperAdmin()) {
+            return;
+        }
+
+        if ($preset->organization_id && ! $user->organizations()->where('organizations.id', $preset->organization_id)->wherePivot('status', 'ACTIVE')->exists()) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengelola preset di organisasi ini.');
+        }
     }
 }

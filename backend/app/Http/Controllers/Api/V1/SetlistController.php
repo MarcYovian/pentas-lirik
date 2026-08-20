@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ReorderSetlistItemsRequest;
 use App\Http\Requests\StoreSetlistRequest;
 use App\Http\Resources\SetlistResource;
+use App\Models\Organization;
 use App\Models\Setlist;
 use App\Models\SetlistItem;
 use App\Models\Song;
@@ -17,13 +18,21 @@ use Illuminate\Support\Facades\DB;
 class SetlistController extends Controller
 {
     /**
-     * Display a listing of all setlists.
+     * Display a listing of all setlists (optionally scoped to organization).
      */
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $setlists = Setlist::with(['setlistItems.song.lyricChunks'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = Setlist::with(['setlistItems.song.lyricChunks']);
+
+        $orgId = $request->header('X-Organization-Id')
+            ?? $request->query('organization_id')
+            ?? $request->query('org_id');
+
+        if ($orgId) {
+            $query->where('organization_id', $orgId);
+        }
+
+        $setlists = $query->orderBy('created_at', 'desc')->get();
 
         return SetlistResource::collection($setlists);
     }
@@ -31,8 +40,10 @@ class SetlistController extends Controller
     /**
      * Display the specified setlist.
      */
-    public function show(Setlist $setlist): SetlistResource
+    public function show(Request $request, Setlist $setlist): SetlistResource
     {
+        $this->authorizeSetlistAccess($request, $setlist);
+
         $setlist->load(['setlistItems.song.lyricChunks']);
 
         return new SetlistResource($setlist);
@@ -43,7 +54,24 @@ class SetlistController extends Controller
      */
     public function store(StoreSetlistRequest $request): JsonResponse
     {
+        $orgId = $request->input('organization_id')
+            ?? $request->header('X-Organization-Id')
+            ?? $request->user()?->organizations()->first()?->id
+            ?? Organization::getDefault()->id;
+
+        $user = $request->user();
+        if ($orgId && $user && ! $user->isSuperAdmin()) {
+            $hasExplicitOrg = $request->has('organization_id') || $request->hasHeader('X-Organization-Id');
+            if ($hasExplicitOrg) {
+                $isMember = $user->organizations()->where('organizations.id', $orgId)->wherePivot('status', 'ACTIVE')->exists();
+                if (! $isMember) {
+                    abort(403, 'Anda tidak memiliki hak akses untuk membuat setlist di organisasi ini.');
+                }
+            }
+        }
+
         $setlist = Setlist::create([
+            'organization_id' => $orgId,
             'user_id' => $request->user()->id,
             'name' => $request->validated('name'),
         ]);
@@ -64,6 +92,8 @@ class SetlistController extends Controller
      */
     public function update(StoreSetlistRequest $request, Setlist $setlist): SetlistResource
     {
+        $this->authorizeSetlistAccess($request, $setlist);
+
         $setlist->update([
             'name' => $request->validated('name'),
         ]);
@@ -99,8 +129,10 @@ class SetlistController extends Controller
     /**
      * Remove the specified setlist.
      */
-    public function destroy(Setlist $setlist): JsonResponse
+    public function destroy(Request $request, Setlist $setlist): JsonResponse
     {
+        $this->authorizeSetlistAccess($request, $setlist);
+
         $setlist->delete();
 
         return response()->json([
@@ -113,6 +145,8 @@ class SetlistController extends Controller
      */
     public function addItem(Request $request, Setlist $setlist): JsonResponse
     {
+        $this->authorizeSetlistAccess($request, $setlist);
+
         $validated = $request->validate([
             'song_id' => ['required', 'integer', 'exists:songs,id'],
         ]);
@@ -134,8 +168,10 @@ class SetlistController extends Controller
     /**
      * Remove an item from the setlist.
      */
-    public function removeItem(Setlist $setlist, int $itemId): JsonResponse
+    public function removeItem(Request $request, Setlist $setlist, int $itemId): JsonResponse
     {
+        $this->authorizeSetlistAccess($request, $setlist);
+
         $item = $setlist->setlistItems()->where('id', $itemId)->firstOrFail();
         $item->delete();
 
@@ -164,6 +200,8 @@ class SetlistController extends Controller
      */
     public function reorder(ReorderSetlistItemsRequest $request, Setlist $setlist): SetlistResource
     {
+        $this->authorizeSetlistAccess($request, $setlist);
+
         $itemIds = $request->validated('item_ids');
 
         DB::transaction(function () use ($setlist, $itemIds) {
@@ -185,5 +223,20 @@ class SetlistController extends Controller
         $setlist->load(['setlistItems.song.lyricChunks']);
 
         return new SetlistResource($setlist);
+    }
+
+    /**
+     * Ensure the user has active membership in the setlist's organization to prevent cross-tenant IDOR attacks.
+     */
+    protected function authorizeSetlistAccess(Request $request, Setlist $setlist): void
+    {
+        $user = $request->user();
+        if (! $user || $user->isSuperAdmin()) {
+            return;
+        }
+
+        if ($setlist->organization_id && ! $user->organizations()->where('organizations.id', $setlist->organization_id)->wherePivot('status', 'ACTIVE')->exists()) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengelola setlist di organisasi ini.');
+        }
     }
 }

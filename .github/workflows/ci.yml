@@ -1,0 +1,142 @@
+name: CI / Automated Testing Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ========================================================================= #
+  # 1. BACKEND TEST SUITE (Laravel 13, PHPUnit, Security & Code Quality)      #
+  # ========================================================================= #
+  backend-tests:
+    name: Backend Tests & Pint Formatter
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: pentas_lirik_testing
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_USER: sail
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, bcmath, pcntl, redis
+          coverage: none
+
+      - name: Install Composer Dependencies
+        working-directory: ./backend
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Setup Environment File
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run Database Migrations
+        working-directory: ./backend
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: pentas_lirik_testing
+          DB_USERNAME: sail
+          DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: php artisan migrate --force
+
+      - name: Run PHPUnit Test Suite
+        working-directory: ./backend
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: pentas_lirik_testing
+          DB_USERNAME: sail
+          DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: php artisan test
+
+      - name: Check Code Style (Laravel Pint)
+        working-directory: ./backend
+        run: ./vendor/bin/pint --test
+
+  # ========================================================================= #
+  # 2. FRONTEND TEST SUITE (TypeScript Lint, Vite Build & Desktop Packaging)   #
+  # ========================================================================= #
+  frontend-tests:
+    name: Frontend Build & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: TypeScript Lint & Type Checking
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Build React Production Assets & Server
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Verify Desktop Electron Build Bundle
+        working-directory: ./frontend
+        run: npm run desktop:build
+
+  # ========================================================================= #
+  # 3. DOCKER INTEGRITY CHECK (Validate Multi-Container Compose Configuration)#
+  # ========================================================================= #
+  docker-validation:
+    name: Docker Compose Config Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Environment File for Docker
+        run: cp backend/.env.example backend/.env
+
+      - name: Validate Docker Compose Configuration
+        run: docker compose config

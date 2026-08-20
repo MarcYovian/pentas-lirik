@@ -1,0 +1,154 @@
+name: Release Standalone Desktop App (.exe, .dmg, .AppImage)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ========================================================================= #
+  # 1. CI VALIDATION GATE: Pastikan seluruh test & build lulus 100%           #
+  # ========================================================================= #
+  ci-validation-gate:
+    name: Run CI Validation Tests Before Release
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: pentas_lirik_testing
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_USER: sail
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, bcmath, pcntl, redis
+          coverage: none
+
+      - name: Install Composer Dependencies
+        working-directory: ./backend
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Setup Backend Environment
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run Database Migrations
+        working-directory: ./backend
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: pentas_lirik_testing
+          DB_USERNAME: sail
+          DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: php artisan migrate --force
+
+      - name: Run Backend PHPUnit Tests
+        working-directory: ./backend
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: pentas_lirik_testing
+          DB_USERNAME: sail
+          DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: php artisan test
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Frontend TypeScript Lint & Typecheck
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Test Frontend Web & Server Build
+        working-directory: ./frontend
+        run: npm run build
+
+  # ========================================================================= #
+  # 2. DESKTOP BUILD & PACKAGING (HANYA BERJALAN JIKA CI GATE LULUS)          #
+  # ========================================================================= #
+  build-desktop:
+    name: Build Desktop Application (${{ matrix.os }})
+    needs: [ci-validation-gate] # << GERBANG PENGAMAN: Jika ci-validation-gate gagal, job ini TIDAK AKAN JALAN
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build Web Application & Server
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Build Desktop Application
+        working-directory: ./frontend
+        run: npm run desktop:build
+
+      - name: Package Desktop Executables
+        working-directory: ./frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --publish always
+
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-binaries-${{ matrix.os }}
+          path: |
+            frontend/release/*.exe
+            frontend/release/*.dmg
+            frontend/release/*.AppImage
+            frontend/release/*.deb
+            frontend/release/*.zip
+          if-no-files-found: warn

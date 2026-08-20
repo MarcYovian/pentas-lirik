@@ -1,0 +1,62 @@
+name: CD / Deploy to Home Server (Docker & Cloudflare)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: home-server-deployment
+  cancel-in-progress: false
+
+jobs:
+  # Gerbang Keamanan: CD hanya jalan jika seluruh test di CI lulus 100%
+  deploy-home-server:
+    name: Execute Local Deployment on Home Server
+    runs-on: self-hosted # Dijalankan langsung oleh mesin Home Server Anda
+
+    steps:
+      - name: Deploy PentasLirik Docker Stack
+        run: |
+          echo "==========================================================="
+          echo "🚀 [PentasLirik CD] Memulai Deployment Otomatis di Home Server"
+          echo "==========================================================="
+          
+          # 1. Masuk ke direktori repositori proyek
+          cd /apps/repos/pentas-lirik
+          
+          # 2. Tarik kode terbaru dari branch main
+          echo "📥 [Step 1/6] Menarik kode terbaru dari GitHub (git pull)..."
+          git pull origin main
+          
+          # 3. Update dependensi Composer di backend
+          echo "📦 [Step 2/6] Memperbarui dependensi PHP Composer..."
+          docker compose exec -T backend composer install --no-dev --optimize-autoloader --no-interaction
+          
+          # 4. Jalankan migrasi database
+          echo "🗄️ [Step 3/6] Menjalankan migrasi database terbaru..."
+          docker compose exec -T backend php artisan migrate --force
+          
+          # 5. Reset & Re-cache konfigurasi Laravel untuk performa produksi
+          echo "⚡ [Step 4/6] Mengoptimasi cache Laravel (config, route, view, event)..."
+          docker compose exec -T backend php artisan optimize:clear
+          docker compose exec -T backend php artisan config:cache
+          docker compose exec -T backend php artisan route:cache
+          docker compose exec -T backend php artisan view:cache
+          docker compose exec -T backend php artisan event:cache
+          
+          # 6. Rebuild kontainer frontend & backend yang mengalami perubahan
+          echo "🐳 [Step 5/6] Membangun ulang kontainer frontend & backend..."
+          docker compose up -d --build frontend backend
+          
+          # 7. Restart Nginx proxy & Reverb WebSocket server
+          echo "🔄 [Step 6/6] Me-restart Nginx proxy & Reverb WebSocket worker..."
+          docker compose restart nginx
+          docker compose exec -T backend supervisorctl restart laravel-reverb || true
+          docker compose exec -T backend php artisan queue:restart || true
+          
+          echo "==========================================================="
+          echo "🎉 [PentasLirik CD] Deployment Home Server Berhasil 100%!"
+          echo "🌐 Aplikasi siap diakses via Cloudflare Tunnel!"
+          echo "==========================================================="

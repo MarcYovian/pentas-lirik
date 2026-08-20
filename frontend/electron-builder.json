@@ -1,0 +1,42 @@
+{
+  "appId": "com.pentaslirik.app",
+  "productName": "PentasLirik",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "public/**/*",
+    "package.json"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/icon-512.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "PentasLirik"
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "public/icon-512.png",
+    "category": "public.app-category.productivity"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "public/icon-512.png",
+    "category": "AudioVideo"
+  }
+}

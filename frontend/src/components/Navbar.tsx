@@ -68,7 +68,28 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [copied, setCopied] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [canInstallPwa, setCanInstallPwa] = useState(false);
+  const [lanInfo, setLanInfo] = useState<{ primary_ip?: string; port?: number; lan_dashboard_url?: string } | null>(null);
+  const [copiedLan, setCopiedLan] = useState(false);
   const envInfo = getEnvironmentInfo();
+
+  useEffect(() => {
+    fetch('/api/v1/system/network-info')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data?.primary_ip && json.data.primary_ip !== '127.0.0.1') {
+          setLanInfo(json.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleCopyLanUrl = () => {
+    if (lanInfo?.lan_dashboard_url) {
+      navigator.clipboard.writeText(lanInfo.lan_dashboard_url);
+      setCopiedLan(true);
+      setTimeout(() => setCopiedLan(false), 2000);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onInstallPromptChange((canInstall) => {
@@ -181,6 +202,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="hidden sm:inline">{envInfo.label}</span>
           <span className="sm:hidden">{envInfo.isLocal ? 'LOCAL' : 'CLOUD'}</span>
         </div>
+
+        {/* Local Wi-Fi Access Badge for iPad / Multi-device */}
+        {lanInfo && lanInfo.primary_ip && (
+          <button
+            id="badge-lan-ip"
+            onClick={handleCopyLanUrl}
+            className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-300 text-xs font-semibold transition active:scale-95 shadow-sm"
+            title={`Klik untuk menyalin URL akses iPad/HP: ${lanInfo.lan_dashboard_url}`}
+          >
+            <Radio className="w-3 h-3 text-cyan-400 shrink-0 animate-pulse" />
+            <span className="font-mono text-[11px]">{lanInfo.primary_ip}:{lanInfo.port || 3000}</span>
+            {copiedLan ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-cyan-400/70" />}
+          </button>
+        )}
 
         {/* Live Sync / Offline Cache Status Badge */}
         <div

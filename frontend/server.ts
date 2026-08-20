@@ -32,7 +32,7 @@ let organizations: Organization[] = [
     description: 'Organisasi default instalasi lokal PentasLirik',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    is_admin: true,
+    pivot: { role: 'ADMIN', status: 'ACTIVE' },
   },
 ];
 let displayPresets: DisplaySetting[] = [{ ...DEFAULT_DISPLAY_SETTING }];
@@ -275,7 +275,7 @@ app.post('/api/v1/auth/register', (req: Request, res: Response) => {
       description: 'Organisasi Baru',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      is_admin: true,
+      pivot: { role: 'ADMIN', status: 'ACTIVE' },
     };
     organizations.unshift(targetOrg);
   }
@@ -360,7 +360,7 @@ app.post('/api/v1/organizations', (req: Request, res: Response) => {
     description: description || '',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    is_admin: true,
+    pivot: { role: 'ADMIN', status: 'ACTIVE' },
   };
 
   organizations.unshift(newOrg);

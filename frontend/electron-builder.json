@@ -41,6 +41,7 @@
   },
   "linux": {
     "target": ["AppImage", "deb"],
+    "maintainer": "MarcYovian <marcyovian@pentaslirik.local>",
     "icon": "public/icon-512.png",
     "category": "AudioVideo"
   }

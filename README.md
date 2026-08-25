@@ -108,8 +108,19 @@ cp backend/.env.example backend/.env
 ```
 
 ### **3. Nyalakan Kontainer Docker**
+
+**Untuk Mode Development (Lokal dengan Hot Reload / HMR):**
 ```bash
-docker compose up -d --build frontend backend mysql redis nginx
+docker compose up -d --build
+```
+
+**Untuk Mode Production (Server VPS / Production Stack):**
+```bash
+# Pastikan network cloudflare_net sudah dibuat jika menggunakan global tunnel
+docker network create cloudflare_net || true
+
+# Jalankan production compose
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 ### **4. Inisialisasi Database**

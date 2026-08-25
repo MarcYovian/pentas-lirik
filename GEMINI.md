@@ -3,24 +3,29 @@
 ## 1. Deskripsi Proyek & Arsitektur
 - **Deskripsi Singkat**: PentasLirik adalah sistem kontrol dan penayangan lirik lagu real-time berlatensi rendah untuk panggung live performance dan live streaming overlay (OBS Studio). Sistem memisahkan antara Dashboard Operator (Desktop/Mobile) dan Overlay Tampilan (OBS) yang disinkronkan melalui WebSockets.
 - **Tech Stack & Environment Utama (Docker Native)**:
-  - **Environment**: Seluruh alur pengembangan (*development*) dan *production* berjalan **sepenuhnya di dalam container Docker** via `docker-compose.yml`. Tidak ada binary `php`, `composer`, atau `node` yang diasumsikan terpasang di host OS.
+  - **Environment**: Seluruh alur pengembangan (*development*) dan *production* berjalan **sepenuhnya di dalam container Docker** via `docker-compose.yml` (Development) dan `docker-compose.prod.yml` (Production). Tidak ada binary `php`, `composer`, atau `node` yang diasumsikan terpasang di host OS.
   - **Backend**: Laravel 13.x (PHP 8.4 via Docker `php:8.4-cli-alpine`), Supervisor, Laravel Sanctum (Multi-device Auth), Laravel Reverb (WebSockets).
   - **Database & Cache**: **MySQL 8.4** (`pentas_lirik_mysql`) dan **Redis Alpine** (`pentas_lirik_redis`).
   - **Frontend**: React 19, TypeScript, Vite 6, Tailwind CSS v4, Framer Motion (`motion`), Lucide React.
-  - **Reverse Proxy & Gateway**: **Nginx Alpine** (Port 80) & **Cloudflare Tunnel** (`cloudflared`).
+  - **Reverse Proxy & Gateway**: **Nginx Alpine** (Port 80) & **Cloudflare Network** (`cloudflare_net` external network).
   - **Testing**: PHPUnit 12.x (Backend di dalam container), Playwright (Frontend E2E).
 
 ---
 
 ## 2. Struktur Kontainer & Direktori Utama
 
-### **Layanan Docker (`docker-compose.yml`)**
-1. `backend` (`pentas_lirik_backend`): Laravel 13 API & Reverb WebSocket Server (Port 8080).
-2. `mysql` (`pentas_lirik_mysql`): Database MySQL 8.4 (`sail-mysql`).
-3. `redis` (`pentas_lirik_redis`): Redis Cache & Live Display State (`sail-redis`).
-4. `frontend` (`pentas_lirik_frontend`): Production Build React SPA (Nginx).
-5. `nginx` (`pentas_lirik_nginx`): Gateway Reverse Proxy (Port 80).
-6. `cloudflared` (`pentas_lirik_cloudflared`): Cloudflare Tunnel Connector.
+### **Layanan Docker**
+- **Development (`docker-compose.yml`)**:
+  1. `backend` (`pentas_lirik_backend`): Laravel 13 API & Reverb WebSocket Server (Port 8080) dengan live bind mount.
+  2. `mysql` (`pentas_lirik_mysql`): Database MySQL 8.4 (`sail-mysql`).
+  3. `redis` (`pentas_lirik_redis`): Redis Cache & Live Display State (`sail-redis`).
+  4. `frontend` (`pentas_lirik_frontend`): Vite Dev Server dengan Hot Module Replacement (HMR).
+  5. `nginx` (`pentas_lirik_nginx`): Gateway Reverse Proxy (Port 80).
+- **Production (`docker-compose.prod.yml`)**:
+  1. `backend`: Image immutable production (tanpa bind mount source code).
+  2. `mysql` & `redis`: Production database & caching dengan restart always.
+  3. `frontend`: Production static build disajikan via Nginx.
+  4. `nginx`: Gateway Reverse Proxy yang terhubung ke network eksternal `cloudflare_net` untuk dijangkau tunnel Cloudflare.
 
 ### **Struktur Direktori Repositori**
 ```

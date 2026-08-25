@@ -12,6 +12,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "dev:docker": "vite --host 0.0.0.0 --port 80",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "desktop:build": "npm run build && esbuild electron/main.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/electron/main.cjs && esbuild electron/preload.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/electron/preload.cjs",
     "desktop:dev": "npm run desktop:build && electron .",
